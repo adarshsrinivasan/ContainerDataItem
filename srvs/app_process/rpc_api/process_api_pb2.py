@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 import controller_api_pb2 as controller__api__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11process-api.proto\x12\x05proto\x1a\x14\x63ontroller-api.proto\"J\n\x17NotifyCDIsAccessRequest\x12/\n\x0b\x63\x64i_configs\x18\x01 \x03(\x0b\x32\x1a.proto.ControllerCdiConfig\"\'\n\x18NotifyCDIsAccessResponse\x12\x0b\n\x03\x65rr\x18\x02 \x01(\t2g\n\x0eProcessService\x12U\n\x10NotifyCDIsAccess\x12\x1e.proto.NotifyCDIsAccessRequest\x1a\x1f.proto.NotifyCDIsAccessResponse\"\x00\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11process-api.proto\x12\x05proto\x1a\x14\x63ontroller-api.proto\"J\n\x17NotifyCDIsAccessRequest\x12/\n\x0b\x63\x64i_configs\x18\x01 \x03(\x0b\x32\x1a.proto.ControllerCdiConfig\"\'\n\x18NotifyCDIsAccessResponse\x12\x0b\n\x03\x65rr\x18\x01 \x01(\t\")\n\x16TransferPayloadRequest\x12\x0f\n\x07payload\x18\x01 \x01(\t\"&\n\x17TransferPayloadResponse\x12\x0b\n\x03\x65rr\x18\x01 \x01(\t2\xbb\x01\n\x0eProcessService\x12U\n\x10NotifyCDIsAccess\x12\x1e.proto.NotifyCDIsAccessRequest\x1a\x1f.proto.NotifyCDIsAccessResponse\"\x00\x12R\n\x0fTransferPayload\x12\x1d.proto.TransferPayloadRequest\x1a\x1e.proto.TransferPayloadResponse\"\x00\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -25,6 +25,10 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_NOTIFYCDISACCESSREQUEST']._serialized_end=124
   _globals['_NOTIFYCDISACCESSRESPONSE']._serialized_start=126
   _globals['_NOTIFYCDISACCESSRESPONSE']._serialized_end=165
-  _globals['_PROCESSSERVICE']._serialized_start=167
-  _globals['_PROCESSSERVICE']._serialized_end=270
+  _globals['_TRANSFERPAYLOADREQUEST']._serialized_start=167
+  _globals['_TRANSFERPAYLOADREQUEST']._serialized_end=208
+  _globals['_TRANSFERPAYLOADRESPONSE']._serialized_start=210
+  _globals['_TRANSFERPAYLOADRESPONSE']._serialized_end=248
+  _globals['_PROCESSSERVICE']._serialized_start=251
+  _globals['_PROCESSSERVICE']._serialized_end=438
 # @@protoc_insertion_point(module_scope)

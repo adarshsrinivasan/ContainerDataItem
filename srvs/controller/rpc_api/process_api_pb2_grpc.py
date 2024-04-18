@@ -19,12 +19,23 @@ class ProcessServiceStub(object):
                 request_serializer=process__api__pb2.NotifyCDIsAccessRequest.SerializeToString,
                 response_deserializer=process__api__pb2.NotifyCDIsAccessResponse.FromString,
                 )
+        self.TransferPayload = channel.unary_unary(
+                '/proto.ProcessService/TransferPayload',
+                request_serializer=process__api__pb2.TransferPayloadRequest.SerializeToString,
+                response_deserializer=process__api__pb2.TransferPayloadResponse.FromString,
+                )
 
 
 class ProcessServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def NotifyCDIsAccess(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def TransferPayload(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -37,6 +48,11 @@ def add_ProcessServiceServicer_to_server(servicer, server):
                     servicer.NotifyCDIsAccess,
                     request_deserializer=process__api__pb2.NotifyCDIsAccessRequest.FromString,
                     response_serializer=process__api__pb2.NotifyCDIsAccessResponse.SerializeToString,
+            ),
+            'TransferPayload': grpc.unary_unary_rpc_method_handler(
+                    servicer.TransferPayload,
+                    request_deserializer=process__api__pb2.TransferPayloadRequest.FromString,
+                    response_serializer=process__api__pb2.TransferPayloadResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -62,5 +78,22 @@ class ProcessService(object):
         return grpc.experimental.unary_unary(request, target, '/proto.ProcessService/NotifyCDIsAccess',
             process__api__pb2.NotifyCDIsAccessRequest.SerializeToString,
             process__api__pb2.NotifyCDIsAccessResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def TransferPayload(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/proto.ProcessService/TransferPayload',
+            process__api__pb2.TransferPayloadRequest.SerializeToString,
+            process__api__pb2.TransferPayloadResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

@@ -9,6 +9,9 @@ build-proto:
     --grpc_python_out=srvs/minion/rpc_api/ \
 	--python_out=srvs/app_process/rpc_api/ \
     --grpc_python_out=srvs/app_process/rpc_api/ \
+    --python_out=srvs/extractor/rpc_api/ \
+    --python_out=srvs/object_detector/rpc_api/ \
+    --python_out=srvs/combiner/rpc_api/ \
 	controller-api.proto \
 	&& \
 	python3 \
@@ -27,6 +30,12 @@ build-proto:
 	--grpc_python_out=srvs/controller/rpc_api/ \
 	--python_out=srvs/app_process/rpc_api/ \
 	--grpc_python_out=srvs/app_process/rpc_api/ \
+	--python_out=srvs/combiner/rpc_api/ \
+    --grpc_python_out=srvs/combiner/rpc_api/ \
+    --python_out=srvs/extractor/rpc_api/ \
+    --grpc_python_out=srvs/extractor/rpc_api/ \
+    --python_out=srvs/object_detector/rpc_api/ \
+    --grpc_python_out=srvs/object_detector/rpc_api/ \
 	process-api.proto
 
 
