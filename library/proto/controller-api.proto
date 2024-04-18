@@ -1,0 +1,92 @@
+syntax = "proto3";
+package proto;
+
+service ControllerService {
+  rpc RegisterProcess(RegisterProcessRequest) returns (RegisterProcessResponse) {}
+  rpc UnregisterProcess(UnregisterProcessRequest) returns (UnregisterProcessResponse) {}
+
+
+  rpc RegisterMinion(RegisterMinionRequest) returns (RegisterMinionResponse) {}
+  rpc UnregisterMinion(UnregisterMinionRequest) returns (UnregisterMinionResponse) {}
+
+  rpc CreateCDIs(CreateCDIsRequest) returns (CreateCDIsResponse) {}
+  rpc TransferCDIs(TransferCDIsRequest) returns (TransferCDIsResponse) {}
+  rpc DeleteCDIs(DeleteCDIsRequest) returns (DeleteCDIsResponse) {}
+}
+
+message ControllerCdiConfig {
+  string process_id = 1;
+  string app_id = 2;
+  string app_name = 3;
+  string cdi_id = 4;
+  int32 shm_key = 5;
+  int32 shm_segsz = 6;
+  int32 shm_mode = 7;
+  int32 shm_uid = 8;
+  int32 shm_gid = 9;
+}
+
+message RegisterProcessRequest {
+  string id = 1;
+  string node_ip = 2;
+  string rpc_ip = 3;
+  string rpc_port = 4;
+}
+
+message RegisterProcessResponse {
+  string err = 1;
+}
+
+message UnregisterProcessRequest {
+  string id = 1;
+}
+
+message UnregisterProcessResponse {
+  string err = 1;
+}
+
+message RegisterMinionRequest {
+  string node_ip = 1;
+  string rpc_ip = 2;
+  string rpc_port = 3;
+}
+
+message RegisterMinionResponse {
+  string err = 1;
+}
+
+message UnregisterMinionRequest {
+  string node_ip = 1;
+}
+
+message UnregisterMinionResponse {
+  string err = 1;
+}
+
+message CreateCDIsRequest {
+  string id = 1;
+  repeated ControllerCdiConfig cdi_configs = 2;
+}
+
+message CreateCDIsResponse {
+  string err = 1;
+}
+
+message TransferCDIsRequest {
+  string id = 1;
+  string transfer_id = 2;
+  repeated ControllerCdiConfig cdi_configs = 3;
+}
+
+message TransferCDIsResponse {
+  string err = 1;
+}
+
+message DeleteCDIsRequest {
+  string id = 1;
+  repeated ControllerCdiConfig cdi_configs = 3;
+}
+
+message DeleteCDIsResponse {
+  string err = 1;
+}

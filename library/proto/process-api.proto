@@ -1,0 +1,16 @@
+syntax = "proto3";
+package proto;
+
+import "controller-api.proto";
+
+service ProcessService {
+    rpc NotifyCDIsAccess(NotifyCDIsAccessRequest) returns (NotifyCDIsAccessResponse) {}
+}
+
+message NotifyCDIsAccessRequest {
+    repeated ControllerCdiConfig cdi_configs = 1;
+}
+
+message NotifyCDIsAccessResponse {
+    string err = 2;
+}

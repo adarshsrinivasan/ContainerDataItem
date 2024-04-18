@@ -1,0 +1,35 @@
+{
+  "app_id": "0a0a2026-798f-4948-8037-93d87c66ee17",
+  "app_name": "shm-test",
+  "shm_configs": [
+    {
+      "shm_key": 5680,
+      "shm_segsz": 1024,
+      "shm_mode": 666,
+      "shm_uid": 998,
+      "shm_gid": 22
+    }
+  ],
+  "worker_configs": [
+    {
+      "name": "one",
+      "shm_ops": [
+        {
+          "shm_key": 5680,
+          "op": "TRANSFER",
+          "transfer_uid": 997,
+          "transfer_gid": 23
+        }
+      ]
+    },
+    {
+      "name": "two",
+      "shm_ops": [
+        {
+          "shm_key": 5680,
+          "op": "DESTROY"
+        }
+      ]
+    }
+  ]
+}

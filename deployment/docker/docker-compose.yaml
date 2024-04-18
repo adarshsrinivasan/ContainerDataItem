@@ -1,0 +1,121 @@
+version: '3'
+
+services:
+  postgres:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: cdi
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+    networks:
+      cdi-network: { }
+    # Connect command inside the container: psql -h localhost -p 5432 -d marketplace -U admin
+
+  pgbouncer:
+    image: edoburu/pgbouncer
+    ports:
+      - "5432:5432"
+    depends_on:
+      - postgres
+    environment:
+      ADMIN_USERS: admin
+      DB_HOST: postgres
+      DB_USER: admin
+      DB_PASSWORD: admin
+      DB_NAME: cdi
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 1000
+      DEFAULT_POOL_SIZE: 300
+      AUTH_TYPE: plain
+    networks:
+      cdi-network: { }
+
+  controller:
+    image: adarshzededa/cdi-controller:latest
+    restart: always
+    ports:
+      - "50000:50000"
+    ipc: host
+    depends_on:
+      - pgbouncer
+    build:
+      context: ../../
+      dockerfile: srvs/controller/Dockerfile
+      args:
+        - service=controller
+    environment:
+      SQL_HOST: pgbouncer
+      SQL_PORT: 5432
+      SQL_USER: admin
+      SQL_PASSWORD: admin
+      SQL_DB: cdi
+      HOST: "0.0.0.0"
+      PORT: 50000
+    user: "999:21"
+    networks:
+      cdi-network: { }
+
+  minion:
+    image: adarshzededa/cdi-minion:latest
+    restart: always
+    ports:
+      - "50001:50001"
+    ipc: host
+    depends_on:
+      - controller
+    build:
+      context: ../../
+      dockerfile: srvs/minion/Dockerfile
+      args:
+        - service=minion
+    environment:
+      SQL_HOST: pgbouncer
+      SQL_PORT: 5432
+      SQL_USER: admin
+      SQL_PASSWORD: admin
+      SQL_DB: cdi
+      HOST: "0.0.0.0"
+      PORT: 50001
+      CONTROLLER_HOST: controller
+      CONTROLLER_PORT: 50000
+      NODE_IP: "0.0.0.0"
+    user: "999:21"
+    networks:
+      cdi-network: { }
+
+  app_process:
+    image: adarshzededa/cdi-app-process:latest
+    restart: always
+    ports:
+      - "50002:50002"
+    ipc: host
+    depends_on:
+      - controller
+      - minion
+    build:
+      context: ../../
+      dockerfile: srvs/app_process/Dockerfile
+      args:
+        - service=app_process
+    environment:
+      HOST: "0.0.0.0"
+      PORT: 50002
+      CONTROLLER_HOST: controller
+      CONTROLLER_PORT: 50000
+      NODE_IP: "0.0.0.0"
+      PROCESS_ID: "dkjbwlbpwivbu"
+    user: "999:21"
+    networks:
+      cdi-network: { }
+
+
+volumes:
+  postgresql-data:
+    driver: local
+
+networks:
+  cdi-network:
+    driver: bridge
