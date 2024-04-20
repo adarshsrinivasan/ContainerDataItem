@@ -2,7 +2,7 @@ import logging
 
 from library.common.constants import RPC_HOST_ENV, RPC_PORT_ENV
 from library.common.utils import getenv_with_default
-from srvs.object_detector.rpc_api.server_api_handler import serve_rpc
+from srvs.detector.rpc_api.server_api_handler import serve_rpc
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)

@@ -2,8 +2,8 @@ import logging
 
 import grpc
 
-import srvs.object_detector.rpc_api.process_api_pb2_grpc as pb2_grpc
-import srvs.object_detector.rpc_api.process_api_pb2 as pb2
+import srvs.detector.rpc_api.process_api_pb2_grpc as pb2_grpc
+import srvs.detector.rpc_api.process_api_pb2 as pb2
 
 
 class ProcessClient(object):

@@ -14,33 +14,23 @@ services:
 
   extractor:
     image: adarshzededa/cdi-extractor-rpc:latest
-#    platform: "linux/amd64"
+    platform: "linux/arm64"
     restart: always
     ports:
       - "50000:50000"
-    build:
-      context: ../../
-      dockerfile: srvs/extractor/Dockerfile
-      args:
-        - service=extractor
     environment:
       HOST: "0.0.0.0"
       PORT: 50000
-      NEXT_RPC_HOST: object_detector
+      NEXT_RPC_HOST: detector
       NEXT_RPC_PORT: 50000
       LOCAL_BUFFER_DIR: "/tmp"
     networks:
       cdi-network: { }
 
-  object_detector:
-    image: adarshzededa/cdi-objdetector-rpc:latest
-#    platform: "linux/amd64"
+  detector:
+    image: adarshzededa/cdi-detector-rpc:latest
+    platform: "linux/arm64"
     restart: always
-    build:
-      context: ../../
-      dockerfile: srvs/object_detector/Dockerfile
-      args:
-        - service=object_detector
     environment:
       RPC_HOST: "0.0.0.0"
       RPC_PORT: 50000
@@ -51,13 +41,8 @@ services:
 
   combiner:
     image: adarshzededa/cdi-combiner-rpc:latest
-#    platform: "linux/amd64"
+    platform: "linux/arm64"
     restart: always
-    build:
-      context: ../../
-      dockerfile: srvs/combiner/Dockerfile
-      args:
-        - service=combiner
     environment:
       RPC_HOST: "0.0.0.0"
       RPC_PORT: 50000

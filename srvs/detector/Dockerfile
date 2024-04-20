@@ -1,6 +1,6 @@
 FROM adarshzededa/cdi-common:latest
 
-ARG service=extractor
+ARG service=detector
 
 WORKDIR /python-cdi
 

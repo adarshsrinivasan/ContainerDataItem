@@ -1,0 +1,47 @@
+apiVersion: apps/v1 #  for k8s versions before 1.9.0 use apps/v1beta2  and before 1.8.0 use extensions/v1beta1
+kind: Deployment
+metadata:
+  name: extractor
+spec:
+  selector:
+    matchLabels:
+      app: extractor
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: extractor
+    spec:
+      containers:
+        - name: extractor
+          image: adarshzededa/cdi-extractor-rpc:latest
+          imagePullPolicy: Always
+          env:
+            - name: HOST
+              value: "0.0.0.0"
+            - name: PORT
+              value: "50000"
+            - name: NEXT_RPC_HOST
+              value: "detector-service"
+            - name: NEXT_RPC_PORT
+              value: "50000"
+            - name: LOCAL_BUFFER_DIR
+              value: "/tmp"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 400Mi
+          ports:
+            - containerPort: 50000
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 50000
+            periodSeconds: 1
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 50000
+            initialDelaySeconds: 10
+            periodSeconds: 60

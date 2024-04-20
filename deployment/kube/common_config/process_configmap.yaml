@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: process-config
+data:
+  process.conf: |
+    app_id: 0a0a2026-798f-4948-8037-93d87c66ee17
+    app_name: shm-test
+    cdi_configs:
+      - cdi_id: ""
+        cdi_key: 5680
+        cdi_size_bytes: 1024
+      - cdi_id: ""
+        cdi_key: 5681
+        cdi_size_bytes: 1024
+    
+    process_configs:
+      - name: extractor
+        id: ""
+        udi: 999
+        gid: 29
+        cdi_ops:
+          - cdi_id: ""
+            cdi_access_mode: 666
+            destroy_if_no_new_data: True
+            create: True
+            op: TRANSFER
+            transfer_id: ""
+            transfer_mode: 664
+          - cdi_id: ""
+            cdi_access_mode: 666
+            destroy_if_no_new_data: True
+            create: True
+            op: TRANSFER
+            transfer_id: ""
+            transfer_mode: 664
+      - name: detector
+        id: ""
+        udi: 998
+        gid: 28
+        cdi_ops:
+          - cdi_id: ""
+            cdi_access_mode: 664
+            destroy_if_no_new_data: False
+            create: False
+            op: TRANSFER
+            transfer_id: ""
+            transfer_mode: 664
+          - cdi_id: ""
+            cdi_access_mode: 664
+            destroy_if_no_new_data: False
+            create: False
+            op: TRANSFER
+            transfer_id: ""
+            transfer_mode: 664
+      - name: combiner
+        id: ""
+        udi: 998
+        gid: 28
+        cdi_ops:
+          - cdi_id: ""
+            cdi_access_mode: 664
+            destroy_if_no_new_data: False
+            create: False
+            op: TRANSFER
+            transfer_id: ""
+            transfer_mode: 666
+          - cdi_id: ""
+            cdi_access_mode: 664
+            destroy_if_no_new_data: False
+            create: False
+            op: TRANSFER
+            transfer_id: ""
+            transfer_mode: 666
+

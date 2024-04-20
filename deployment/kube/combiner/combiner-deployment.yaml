@@ -1,0 +1,47 @@
+apiVersion: apps/v1 #  for k8s versions before 1.9.0 use apps/v1beta2  and before 1.8.0 use extensions/v1beta1
+kind: Deployment
+metadata:
+  name: combiner
+spec:
+  selector:
+    matchLabels:
+      app: combiner
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: combiner
+    spec:
+      containers:
+        - name: combiner
+          image: adarshzededa/cdi-combiner-rpc:latest
+          imagePullPolicy: Always
+          env:
+            - name: RPC_HOST
+              value: "0.0.0.0"
+            - name: RPC_PORT
+              value: "50000"
+            - name: CACHE_DB_HOST
+              value: "redis-service"
+            - name: CACHE_DB_PORT
+              value: "6379"
+            - name: CACHE_DB_PWD
+              value: "supersecurepassword"
+            - name: LOCAL_BUFFER_DIR
+              value: "/tmp"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 400Mi
+          ports:
+            - containerPort: 50000
+          readinessProbe:
+            grpc:
+              port: 50000
+            periodSeconds: 1
+            initialDelaySeconds: 10
+          livenessProbe:
+            grpc:
+              port: 50000
+            initialDelaySeconds: 10
+            periodSeconds: 60

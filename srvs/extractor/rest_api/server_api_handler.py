@@ -35,7 +35,18 @@ def submit_task():
         "output_file_path": f"{submit_task_model.remote_video_save_dir_path}processed_{submit_task_model.stream_id}.avi"}), 202
 
 
+@app.route(f'{API_URL_PREFIX}/health')
+def health_check():
+    if all_required_services_are_running():
+        return 'OK', 200
+    else:
+        return 'Service Unavailable', 500
+
+
+def all_required_services_are_running():
+    return True
+
+
 def serve_rest(host, port):
     logging.info(f"Starting Rest on: {host}:{port}")
     app.run(host=host, port=port)
-
