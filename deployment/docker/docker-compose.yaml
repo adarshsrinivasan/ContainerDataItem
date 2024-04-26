@@ -13,7 +13,7 @@ services:
       cdi-network: { }
 
   extractor:
-    image: adarshzededa/cdi-extractor-rpc:latest
+    image: shirinebadi/cdi-extractor-rest:latest
     platform: "linux/arm64"
     restart: always
     ports:
@@ -28,7 +28,7 @@ services:
       cdi-network: { }
 
   detector:
-    image: adarshzededa/cdi-detector-rpc:latest
+    image: shirinebadi/cdi-detector:latest
     platform: "linux/arm64"
     restart: always
     environment:
@@ -40,7 +40,7 @@ services:
       cdi-network: { }
 
   combiner:
-    image: adarshzededa/cdi-combiner-rpc:latest
+    image: shirinebadi/cdi-combiner-rest:latest
     platform: "linux/arm64"
     restart: always
     environment:
