@@ -9,7 +9,8 @@ from ultralytics import YOLO
 
 from library.common.constants import NEXT_RPC_HOST_ENV, NEXT_RPC_PORT_ENV, OBJ_DET_MODEL_DIR_PATH_ENV
 from library.common.utils import getenv_with_default
-from srvs.detector.rpc_api.process_client_api_handlers import ProcessClient
+#from srvs.detector.rpc_api.process_client_api_handlers import ProcessClient
+from srvs.detector.rest_api.process_client_api_handler import ProcessClient
 
 next_rpc_host = getenv_with_default(NEXT_RPC_HOST_ENV, "0.0.0.0")
 next_rpc_port = getenv_with_default(NEXT_RPC_PORT_ENV, "50002")

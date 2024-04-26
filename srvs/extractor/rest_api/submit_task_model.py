@@ -1,6 +1,6 @@
 class Submit_Task_Model:
     def __init__(self, stream_id="", remote_video_fetch_path="/sftpuser/dogs.mp4",
-                 remote_video_save_dir_path=f"/sftpuser/", sftp_host="ms1243.utah.cloudlab.us",
+                 remote_video_save_dir_path=f"/sftpuser/", sftp_host="amd111.utah.cloudlab.us",
                  sftp_port=22, sftp_user="sftpuser", sftp_pwd="sftpuser"):
         self.stream_id = stream_id
         self.remote_video_fetch_path = remote_video_fetch_path

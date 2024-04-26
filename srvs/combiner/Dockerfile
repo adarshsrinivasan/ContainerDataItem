@@ -4,7 +4,7 @@ ARG service=combiner
 
 WORKDIR /python-cdi
 
-COPY srvs/$service srvs/$service
+COPY . srvs/$service
 
 ENV SERVICE=${service}
 ENV PYTHONPATH=${PYTHONPATH}:/python-cdi/srvs/${SERVICE}/rpc_api

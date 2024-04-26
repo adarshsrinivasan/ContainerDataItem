@@ -7,7 +7,8 @@ import paramiko
 
 from library.common.constants import NEXT_RPC_HOST_ENV, NEXT_RPC_PORT_ENV
 from library.common.utils import getenv_with_default
-from srvs.extractor.rpc_api.process_client_api_handlers import ProcessClient
+#from srvs.extractor.rpc_api.process_client_api_handlers import ProcessClient
+from srvs.extractor.rest_api.process_client_api_handlers import ProcessClient
 
 next_rpc_host = getenv_with_default(NEXT_RPC_HOST_ENV, "0.0.0.0")
 next_rpc_port = getenv_with_default(NEXT_RPC_PORT_ENV, "50002")
