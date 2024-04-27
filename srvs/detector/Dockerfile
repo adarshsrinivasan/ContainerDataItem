@@ -1,4 +1,4 @@
-FROM adarshzededa/cdi-common:latest
+FROM shirinebadi/cdi-common:latest
 
 ARG service=detector
 

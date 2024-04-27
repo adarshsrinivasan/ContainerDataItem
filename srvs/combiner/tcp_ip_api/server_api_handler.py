@@ -29,7 +29,7 @@ class ProcessService:
 def serve_tcp(tcp_host, tcp_port):
     logging.info(f"Starting TCP server on: {tcp_host}:{tcp_port}")
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind((tcp_host, tcp_port))
+    server_socket.bind((tcp_host, int(tcp_port)))
     server_socket.listen(1)
 
     while True:
@@ -37,9 +37,17 @@ def serve_tcp(tcp_host, tcp_port):
         logging.info(f"Connected to client: {address}")
 
         try:
-            data = client_socket.recv(1024).decode('utf-8')
-            payload = json.loads(data)["payload"]
+            data = ""
+            while True:
+                chunk = client_socket.recv(4096).decode('utf-8')
+                if not chunk:
+                    break
+                data += chunk
+                if data.endswith('\n'):
+                    break
 
+            payload = json.loads(data)["payload"]
+            logging.info("Loaded Json")
             process_service = ProcessService()
             response = process_service.TransferPayload(payload)
 
