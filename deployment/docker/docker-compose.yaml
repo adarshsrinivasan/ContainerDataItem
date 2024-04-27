@@ -13,7 +13,7 @@ services:
       cdi-network: { }
 
   extractor:
-    image: shirinebadi/cdi-extractor-rest:latest
+    image: shirinebadi/cdi-extractor:latest
     platform: "linux/arm64"
     restart: always
     ports:
@@ -42,7 +42,7 @@ services:
       cdi-network: { }
 
   combiner:
-    image: shirinebadi/cdi-combiner-rest:latest
+    image: shirinebadi/cdi-combiner:latest
     platform: "linux/arm64"
     restart: always
     environment:
