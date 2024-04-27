@@ -2,7 +2,7 @@ import logging
 import requests
 import json
 
-class ProcessClient(object):
+class RESTProcessClient(object):
     def __init__(self, host, port):
         self.host = host
         self.server_port = port

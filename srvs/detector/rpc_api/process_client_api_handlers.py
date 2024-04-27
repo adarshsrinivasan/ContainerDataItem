@@ -6,7 +6,7 @@ import srvs.detector.rpc_api.process_api_pb2_grpc as pb2_grpc
 import srvs.detector.rpc_api.process_api_pb2 as pb2
 
 
-class ProcessClient(object):
+class RPCProcessClient(object):
     def __init__(self, host, port):
         self.host = host
         self.server_port = port

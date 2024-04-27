@@ -25,6 +25,8 @@ spec:
               value: "combiner-service"
             - name: NEXT_RPC_PORT
               value: "50000"
+            - name: SERVER_TYPE_ENV
+              value: "tcp"
           resources:
             requests:
               cpu: 100m

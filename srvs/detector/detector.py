@@ -7,10 +7,11 @@ import torch
 
 from ultralytics import YOLO
 
-from library.common.constants import NEXT_RPC_HOST_ENV, NEXT_RPC_PORT_ENV, OBJ_DET_MODEL_DIR_PATH_ENV
+from library.common.constants import NEXT_RPC_HOST_ENV, NEXT_RPC_PORT_ENV, OBJ_DET_MODEL_DIR_PATH_ENV, SERVER_TYPE_ENV
 from library.common.utils import getenv_with_default
-#from srvs.detector.rpc_api.process_client_api_handlers import ProcessClient
-from srvs.detector.rest_api.process_client_api_handler import ProcessClient
+from srvs.detector.rpc_api.process_client_api_handlers import RPCProcessClient
+from srvs.detector.rest_api.process_client_api_handler import RESTProcessClient
+from srvs.detector.tcp_ip_api.process_client_api_handlers import TCPProcessClient
 
 next_rpc_host = getenv_with_default(NEXT_RPC_HOST_ENV, "0.0.0.0")
 next_rpc_port = getenv_with_default(NEXT_RPC_PORT_ENV, "50002")
@@ -130,5 +131,17 @@ class Object_Detector(threading.Thread):
 
     def combiner(self):
         global next_rpc_host, next_rpc_port
-        combiner_client = ProcessClient(host=next_rpc_host, port=next_rpc_port)
-        combiner_client.TransferPayload(payload=self.packed_data)
+        
+        server_type = getenv_with_default(SERVER_TYPE_ENV, "rest")
+
+        process_clients = {
+            "rest": lambda: RESTProcessClient(host=next_rpc_host, port=next_rpc_port),
+            "tcp": lambda: TCPProcessClient(host=next_rpc_host, port=next_rpc_port),
+            "grpc": lambda: RPCProcessClient(host=next_rpc_host, port=next_rpc_port)
+        }
+
+        combiner_client = process_clients.get(server_type)()
+        if combiner_client:
+            combiner_client.TransferPayload(payload=self.packed_data)
+        else:
+            logging.error(f"Invalid server type: {server_type}")

@@ -24,6 +24,7 @@ services:
       NEXT_RPC_HOST: detector
       NEXT_RPC_PORT: 50000
       LOCAL_BUFFER_DIR: "/tmp"
+      SERVER_TYPE_ENV: "tcp"
     networks:
       cdi-network: { }
 
@@ -36,6 +37,7 @@ services:
       RPC_PORT: 50000
       NEXT_RPC_HOST: combiner
       NEXT_RPC_PORT: 50000
+      SERVER_TYPE_ENV: "tcp"
     networks:
       cdi-network: { }
 
@@ -50,6 +52,7 @@ services:
       CACHE_DB_PORT: 6379
       CACHE_DB_PWD: "supersecurepassword"
       LOCAL_BUFFER_DIR: "/tmp"
+      SERVER_TYPE_ENV: "tcp"
     networks:
       cdi-network: { }
 
