@@ -1,4 +1,6 @@
 import logging
+import time
+from library.db.evaluation_db import update_finish_time
 from flask import Flask, request, jsonify
 from library.common.constants import LOCAL_BUFFER_DIR_ENV, CACHE_DB_HOST_ENV, CACHE_DB_PORT_ENV, CACHE_DB_PWD_ENV
 from library.common.utils import getenv_with_default
@@ -23,6 +25,8 @@ class ProcessService:
         combiner_obj = Combiner(local_buffer_dir=local_buffer_dir, packed_data=payload, cache_client=cache_client)
         done = combiner_obj.combiner()
         if done:
+            logging.info("Updating finish time")
+            update_finish_time(stream_id=combiner_obj.stream_id, finish_time=time.time())
             upload_file(combiner_obj.stream_id, combiner_obj.local_out_file_path, combiner_obj.remote_video_save_path,
                         combiner_obj.sftp_host, combiner_obj.sftp_port, combiner_obj.sftp_user, combiner_obj.sftp_pwd)
         return {"err": ""}

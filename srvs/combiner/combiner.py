@@ -4,6 +4,7 @@ import threading
 import cv2
 import numpy as np
 import paramiko
+from library.db.evaluation_db import update_finish_time
 
 
 def upload_file(stream_id, local_out_file_path, remote_video_save_path, sftp_host, sftp_port, sftp_user, sftp_pwd):

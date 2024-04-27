@@ -1,5 +1,6 @@
 import logging
 import threading
+import time
 
 import cv2
 import numpy as np
@@ -7,6 +8,7 @@ import paramiko
 
 from library.common.constants import NEXT_RPC_HOST_ENV, NEXT_RPC_PORT_ENV, SERVER_TYPE_ENV
 from library.common.utils import getenv_with_default
+from library.db.evaluation_db import add_start_time
 from srvs.extractor.rpc_api.process_client_api_handlers import RPCProcessClient
 from srvs.extractor.rest_api.process_client_api_handlers import RESTProcessClient
 from srvs.extractor.tcp_ip_api.process_client_api_handlers import TCPProcessClient
@@ -33,6 +35,8 @@ class Extractor(threading.Thread):
 
     def run(self):
         self.download_file()
+        logging.info("Adding start time to the DB")
+        add_start_time(stream_id=self.stream_id, start_time=time.time())
         self.extractor()
 
     def start_processing(self, daemonic=True):
