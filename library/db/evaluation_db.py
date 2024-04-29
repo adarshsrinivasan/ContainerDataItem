@@ -7,7 +7,7 @@ def execute_sql_command(sql_query, params=None, fetch_result=False):
                             user=getenv_with_default(SQL_USER_ENV, "admin"),
                             host=getenv_with_default(SQL_HOST_ENV, "localhost"),
                             password=getenv_with_default(SQL_PASSWORD_ENV, "admin"),
-                            port="3306")
+                            port="5432")
     
     # Open a cursor to perform database operations
     cur = conn.cursor()

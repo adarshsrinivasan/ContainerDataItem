@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 import threading
 import time
@@ -36,7 +37,7 @@ class Extractor(threading.Thread):
     def run(self):
         self.download_file()
         logging.info("Adding start time to the DB")
-        add_start_time(stream_id=self.stream_id, start_time=time.time())
+        add_start_time(stream_id=self.stream_id, start_time=datetime.now().time())
         self.extractor()
 
     def start_processing(self, daemonic=True):

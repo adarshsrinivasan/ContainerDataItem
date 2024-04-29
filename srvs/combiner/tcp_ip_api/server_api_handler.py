@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 import socket
 import json
@@ -25,7 +26,7 @@ class ProcessService:
         done = combiner_obj.combiner()
         if done:
             logging.info("Updating finish time")
-            update_finish_time(stream_id=combiner_obj.stream_id, finish_time=time.time())
+            update_finish_time(stream_id=combiner_obj.stream_id, finish_time=datetime.now().time())
             upload_file(combiner_obj.stream_id, combiner_obj.local_out_file_path, combiner_obj.remote_video_save_path,
                         combiner_obj.sftp_host, combiner_obj.sftp_port, combiner_obj.sftp_user, combiner_obj.sftp_pwd)
         return {"err": ""}

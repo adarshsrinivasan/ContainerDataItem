@@ -25,6 +25,7 @@ services:
       NEXT_RPC_PORT: 50000
       LOCAL_BUFFER_DIR: "/tmp"
       SERVER_TYPE_ENV: "tcp"
+      SQL_HOST_ENV: "db"
     networks:
       cdi-network: { }
 
@@ -57,20 +58,20 @@ services:
       cdi-network: { }
 
   db:
-    image: mysql:latest
-    container_name: mysql_db
+    image: postgres:latest
+    container_name: postgres_db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: admin
-      MYSQL_DATABASE: eval
-      MYSQL_USER: admin
-      MYSQL_PASSWORD: admin
+      POSTGRES_DB: "eval"
+      POSTGRES_USER: "admin"
+      POSTGRES_PASSWORD: "admin"
     volumes:
-      - ./mysql_data:/var/lib/mysql
+      - ./postgres_data:/var/lib/postgresql/data
     ports:
-      - "3306:3306"
+      - "5432:5432"
     networks:
       cdi-network: { }
+
 
 volumes:
   redis-data:
