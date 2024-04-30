@@ -172,6 +172,43 @@ services:
       - type: bind
         source: ../kube/common_config/process_config.yaml
         target: /etc/config/process_config.yaml
+
+  combiner:
+    image: adarshzededa/cdi-combiner:latest
+    restart: always
+    ports:
+      - "50031:50031"
+    ipc: host
+    depends_on:
+      - minion
+      - cache
+    build:
+      context: ../../
+      dockerfile: srvs/combiner/Dockerfile
+      args:
+        - service=combiner
+    environment:
+      NODE_IP: "minion"
+      PROCESS_ID: "b1610e6e-19a4-49ac-a692-8bae7cefb0a7"
+      CONTAINER_NAME: "combiner"
+      CONTAINER_IP: "combiner"
+      CONTAINER_NAMESPACE: "default"
+      RPC_HOST: "0.0.0.0"
+      RPC_PORT: 50031
+      CONTROLLER_HOST: controller
+      CONTROLLER_PORT: 50000
+      CONFIG_PATH: "/etc/config/process_config.yaml"
+      CACHE_DB_HOST: cache
+      CACHE_DB_PORT: 6379
+      CACHE_DB_PWD: "supersecurepassword"
+      LOCAL_BUFFER_DIR: "/tmp"
+    user: "995:25"
+    networks:
+      cdi-network: { }
+    volumes:
+      - type: bind
+        source: ../kube/common_config/process_config.yaml
+        target: /etc/config/process_config.yaml
 #  app_process:
 #    image: adarshzededa/cdi-app-process:latest
 #    restart: always

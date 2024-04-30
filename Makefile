@@ -93,6 +93,17 @@ build-detector:
 	&& \
 	docker push ${IMAGE}
 
+build-combiner:
+	$(eval SERVICE := combiner)
+	$(eval IMAGE := adarshzededa/cdi-${SERVICE}:latest)
+	docker build \
+		--file srvs/${SERVICE}/Dockerfile \
+		--build-arg service=${SERVICE} \
+		-t ${IMAGE} \
+		--platform linux/$(ARCH) . \
+	&& \
+	docker push ${IMAGE}
+
 
 
 

@@ -3,8 +3,8 @@ import logging
 import grpc
 import threading
 
-import srvs.extractor.rpc_api.process_api_pb2_grpc as pb2_grpc
-import srvs.extractor.rpc_api.process_api_pb2 as pb2
+import srvs.combiner.rpc_api.process_api_pb2_grpc as pb2_grpc
+import srvs.combiner.rpc_api.process_api_pb2 as pb2
 
 from concurrent import futures
 from grpc_health.v1 import health
@@ -13,7 +13,7 @@ from grpc_health.v1 import health_pb2_grpc as _health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 
 from library.common.cdi_config_model import Config
-from srvs.extractor.cdi_handlers import populate_and_transfer_cdis
+from srvs.combiner.cdi_handlers import populate_and_transfer_cdis
 
 
 _THREAD_POOL_SIZE = 256
