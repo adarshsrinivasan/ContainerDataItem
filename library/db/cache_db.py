@@ -1,5 +1,4 @@
 import redis
-from rq import Queue
 
 
 class Cache_DB:

@@ -46,7 +46,7 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
                 except Exception as err:
                     logging.error(f"CreateCDIs: {err}")
                     err = f"Exception while creating SharedMemory for App: {cdi_minion_table.app_id}, CDI: {cdi_minion_table.cdi_id}: {err}"
-                    return pb2.CreateCDIsResponse(err=err)
+                    return pb2.MinionCreateCDIsResponse(err=err)
 
                 # Set the right permissions
                 try:
@@ -55,7 +55,8 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
                 except Exception as err:
                     err = f"Exception while changing permission of SharedMemory for App: {cdi_minion_table.app_id}, CDI: {cdi_minion_table.cdi_id}: {err}"
                     logging.error(f"CreateCDIs: {err}")
-                    return pb2.CreateCDIsResponse(err=err)
+                    return pb2.MinionCreateCDIsResponse(err=err)
+                shm.print_stat() # TODO: Remove
 
                 # If the request contains a payload, then populate the CDI with the payload.
                 if cdi_minion_table.payload != "":
@@ -64,7 +65,7 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
                 # insert the new record into the DB
                 cdi_minion_table.insert()
                 logging.info(f"CreateCDIs: Successfully created cdi record for key: {cdi_minion_table.cdi_id}")
-        return pb2.CreateCDIsResponse(err="")
+        return pb2.MinionCreateCDIsResponse(err="")
 
     # UpdateCDIs handles the RPC request from Controller to update the permissions of a CDI
     def UpdateCDIs(self, request, context):
@@ -80,7 +81,7 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
                 logging.error(f"UpdateCDIs: Couldn't find cdi record with key: {cdi_minion_table.cdi_id}")
                 # if not, then return an error
                 err = f"Minion-UpdateCDIs: Couldn't find CDI with id: {cdi_minion_table.cdi_id}"
-                return pb2.UpdateCDIsResponse(err=err)
+                return pb2.MinionUpdateCDIsResponse(err=err)
             # if present, then update the permissions of the CDI
             shm = SharedMemory(size=cdi_minion_table.cdi_size_bytes, key=cdi_minion_table.cdi_key,
                                shm_mode=cdi_minion_table.cdi_access_mode, uid=cdi_minion_table.uid,
@@ -91,12 +92,12 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
             except Exception as err:
                 err = f"Exception while changing permission of SharedMemory for App: {cdi_minion_table.app_id}, CDI: {cdi_minion_table.cdi_id}: {err}"
                 logging.error(f"UpdateCDIs: {err}")
-                return pb2.CreateCDIsResponse(err=err)
+                return pb2.MinionUpdateCDIsResponse(err=err)
 
             # update the recode in the DB
             cdi_minion_table.update_by_cdi_id()
             logging.info(f"UpdateCDIs: Successfully updated cdi record with key: {cdi_minion_table.cdi_id}")
-        return pb2.UpdateCDIsResponse(err="")
+        return pb2.MinionUpdateCDIsResponse(err="")
 
     # TransferAndDeleteCDIs handles the RPC request from Controller to transfer a set of CDIs from local to a
     # different node.
@@ -114,7 +115,7 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
                 logging.error(f"TransferAndDeleteCDIs: Couldn't find cdi record with key: {cdi_minion_table.cdi_id}")
                 # if not, then return an error
                 err = f"Minion-TransferAndDeleteCDIs: Couldn't find CDI with id: {cdi_minion_table.cdi_id}"
-                return pb2.TransferAndDeleteCDIsResponse(err=err)
+                return pb2.MinionTransferAndDeleteCDIsResponse(err=err)
             # if present, fetch the CID's payload
             shm = SharedMemory(size=cdi_minion_table.cdi_size_bytes, key=cdi_minion_table.cdi_key,
                                shm_mode=cdi_minion_table.cdi_access_mode, uid=cdi_minion_table.uid,
@@ -126,7 +127,7 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
             except Exception as err:
                 err = f"Minion-TransferAndDeleteCDIs: Exception while fetching SharedMemory details for App: {cdi_minion_table.app_id}, CDI: {cdi_minion_table.cdi_id}: {err}"
                 logging.error(f"TransferAndDeleteCDIs: {err}")
-                return pb2.TransferAndDeleteCDIsResponse(err=err)
+                return pb2.MinionTransferAndDeleteCDIsResponse(err=err)
 
             logging.info(
                 f"Minion-TransferAndDeleteCDIs: Fetching payload of SharedMemory for App: {cdi_minion_table.app_id}, CDI: {cdi_minion_table.cdi_id}")
@@ -141,7 +142,7 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
         if response.err != "":
             err = f"Minion-TransferAndDeleteCDIs: exception while transferring CDI to {request.transfer_host}:{request.transfer_port}: {response.err}"
             logging.error(f"TransferAndDeleteCDIs: {err}")
-            return pb2.TransferAndDeleteCDIsResponse(err=err)
+            return pb2.MinionTransferAndDeleteCDIsResponse(err=err)
 
         # Clean up the transferred CDIs from local
         for cdi_minion_table in cdi_minion_table_list:
@@ -156,7 +157,7 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
                 logging.error(f"TransferAndDeleteCDIs: {err}")
             cdi_minion_table.delete_by_cdi_id()
             logging.info(f"TransferAndDeleteCDIs: Successfully deleted cdi record with key: {cdi_minion_table.cdi_id}")
-        return pb2.TransferAndDeleteCDIsResponse(err="")
+        return pb2.MinionTransferAndDeleteCDIsResponse(err="")
 
     # DeleteCDIs handles the RPC request from Controller to delete a set of CDIs from local.
     def DeleteCDIs(self, request, context):
@@ -172,11 +173,11 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
                 logging.error(f"DeleteCDIs: Couldn't find cdi record with key: {cdi_minion_table.cdi_id}")
                 # if not, then return an error
                 err = f"Minion-DeleteCDIs: Couldn't find CDI with id: {cdi_minion_table.cdi_id}"
-                return pb2.DeleteCDIsResponse(err=err)
+                return pb2.MinionDeleteCDIsResponse(err=err)
             # if present, delete the CID
-            shm = SharedMemory(size=cdi_minion_table.shm_segsz, shm_id=cdi_minion_table.shm_shmid,
-                               key=cdi_minion_table.shm_key, shm_mode=cdi_minion_table.shm_mode,
-                               uid=cdi_minion_table.shm_uid, gid=cdi_minion_table.shm_gid)
+            shm = SharedMemory(size=cdi_minion_table.cdi_size_bytes, key=cdi_minion_table.cdi_key,
+                               shm_mode=cdi_minion_table.cdi_access_mode, uid=cdi_minion_table.uid,
+                               gid=cdi_minion_table.gid)
             try:
                 shm.remove()
             except Exception as err:
@@ -185,8 +186,7 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
                 logging.error(f"DeleteCDIs: {err}")
             # delete the CID record from DB
             cdi_minion_table.delete_by_cdi_id()
-        logging.info(f"DeleteCDIs: Successfully deleted cdi record with key: {cdi_minion_table.cdi_id}")
-        return pb2.DeleteCDIsResponse(err="")
+        return pb2.MinionDeleteCDIsResponse(err="")
 
 
 def _configure_maintenance_server(server: grpc.Server) -> None:

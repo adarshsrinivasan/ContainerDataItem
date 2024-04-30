@@ -33,6 +33,17 @@ services:
     networks:
       cdi-network: { }
 
+  cache:
+    image: redis:6.2-alpine
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning --requirepass supersecurepassword
+    volumes:
+      - redis-data:/data
+    networks:
+      cdi-network: { }
+
   controller:
     image: adarshzededa/cdi-controller:latest
     restart: always
@@ -88,6 +99,46 @@ services:
     user: "998:22"
     networks:
       cdi-network: { }
+
+  extractor:
+    image: adarshzededa/cdi-extractor:latest
+    restart: always
+    ports:
+      - "50011:50011"
+      - "50012:50012"
+    ipc: host
+    depends_on:
+      - minion
+      - cache
+    build:
+      context: ../../
+      dockerfile: srvs/extractor/Dockerfile
+      args:
+        - service=extractor
+    environment:
+      NODE_IP: "minion"
+      PROCESS_ID: "b8269e66-e6d4-4b66-8f1e-acd9715372c9"
+      CONTAINER_NAME: "extractor"
+      CONTAINER_IP: "extractor"
+      CONTAINER_NAMESPACE: "default"
+      RPC_HOST: "0.0.0.0"
+      RPC_PORT: 50011
+      CONTROLLER_HOST: controller
+      CONTROLLER_PORT: 50000
+      HOST: "0.0.0.0"
+      PORT: 50012
+      CONFIG_PATH: "/etc/config/process_config.yaml"
+      CACHE_DB_HOST: cache
+      CACHE_DB_PORT: 6379
+      CACHE_DB_PWD: "supersecurepassword"
+      LOCAL_BUFFER_DIR: "/tmp"
+    user: "997:23"
+    networks:
+      cdi-network: { }
+    volumes:
+      - type: bind
+        source: ../kube/common_config/process_config.yaml
+        target: /etc/config/process_config.yaml
 #  app_process:
 #    image: adarshzededa/cdi-app-process:latest
 #    restart: always
@@ -116,6 +167,8 @@ services:
 
 volumes:
   postgresql-data:
+    driver: local
+  redis-data:
     driver: local
 
 networks:

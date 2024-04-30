@@ -264,7 +264,7 @@ def SHM_Test():
     try:
         shmid_ds = myshm.stat()
     except Exception as err:
-        print(f"Stat Error: {err}")
+        logging.error(f"Stat Error: {err}")
         return
 
     try:

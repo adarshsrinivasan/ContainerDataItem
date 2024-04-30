@@ -41,6 +41,14 @@ def populate_config_from_parent_config(config, all_fields=False):
     config.transfer_mode = parent_config.transfer_mode
 
 
+def print_cdi_infos():
+    global parent_config
+    if parent_config is None:
+        raise Exception("populate_config_from_parent_config: parent_config not populated")
+    for _, cdi in parent_config.cdis.items():
+        cdi.print_stat()
+
+
 class PrettyPrinter(object):
     def __str__(self):
         lines = [self.__class__.__name__ + ':']
@@ -125,6 +133,11 @@ class CDI(PrettyPrinter):
             logging.error(f"CDI_Config - Change Owner - Set Error: {err}")
             return
 
+    def print_stat(self):
+        if self.__myshm.shm_id == -1:
+            self.__myshm.create()
+        self.__myshm.print_stat()
+
 
 class Config(PrettyPrinter):
     def __init__(self, process_id="", process_name="", app_id="", app_name="", cdis=None, destroy_if_no_new_data=False,
@@ -144,8 +157,8 @@ class Config(PrettyPrinter):
 
     def to_proto_controller_cdi_configs(self):
         proto_controller_cdi_configs = []
-        for _, cdi_config in self.cdis:
-            proto_controller_cdi_config = pb2.ControllerCdiConfig()
+        for _, cdi_config in self.cdis.items():
+            proto_controller_cdi_config = pb2.CdiConfig()
 
             proto_controller_cdi_config.process_id = self.process_id
             proto_controller_cdi_config.process_name = self.process_name
@@ -184,7 +197,7 @@ class Config(PrettyPrinter):
         # Read config YAML file
         with open(path_to_yaml_config, 'r') as stream:
             process_config_dict = yaml.safe_load(stream)
-        print(f"Parsed config: {process_config_dict}")
+        logging.debug(f"Parsed config: {process_config_dict}")
 
         process_configs_dict = process_config_dict.get('process_configs', [])
         my_config_dict = None
@@ -224,4 +237,4 @@ class Config(PrettyPrinter):
 if __name__ == "__main__":
     dummy_config = Config(process_id="b8269e66-e6d4-4b66-8f1e-acd9715372c9")
     dummy_config.from_yaml("../../deployment/kube/common_config/process_config.yaml")
-    print(dummy_config)
+    logging.info(dummy_config)

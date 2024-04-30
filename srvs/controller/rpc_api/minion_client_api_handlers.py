@@ -22,7 +22,7 @@ class MinionClient(object):
         request_list = []
         for cdi_controller_table in cdi_controller_table_list:
             request_list.append(cdi_controller_table.as_proto_cdi_config())
-        message = pb2.CreateCDIsRequest(cdi_configs=request_list)
+        message = pb2.MinionCreateCDIsRequest(cdi_configs=request_list)
         return self.stub.CreateCDIs(message)
 
     def UpdateCDIs(self, cdi_controller_table_list):
@@ -30,7 +30,7 @@ class MinionClient(object):
         request_list = []
         for cdi_controller_table in cdi_controller_table_list:
             request_list.append(cdi_controller_table.as_proto_cdi_config())
-        message = pb2.UpdateCDIsRequest(cdi_configs=request_list)
+        message = pb2.MinionUpdateCDIsRequest(cdi_configs=request_list)
         return self.stub.UpdateCDIs(message)
 
     def TransferAndDeleteCDIs(self, transfer_host, transfer_port, cdi_controller_table_list):
@@ -38,7 +38,7 @@ class MinionClient(object):
         request_list = []
         for cdi_controller_table in cdi_controller_table_list:
             request_list.append(cdi_controller_table.as_proto_cdi_config())
-        message = pb2.TransferAndDeleteCDIsRequest(transfer_host=transfer_host, transfer_port=transfer_port,
+        message = pb2.MinionTransferAndDeleteCDIsRequest(transfer_host=transfer_host, transfer_port=transfer_port,
                                                    cdi_configs=request_list)
         return self.stub.TransferAndDeleteCDIs(message)
 
@@ -47,5 +47,5 @@ class MinionClient(object):
         request_list = []
         for cdi_controller_table in cdi_controller_table_list:
             request_list.append(cdi_controller_table.as_proto_cdi_config())
-        message = pb2.DeleteCDIsRequest(cdi_configs=request_list)
+        message = pb2.MinionDeleteCDIsRequest(cdi_configs=request_list)
         return self.stub.DeleteCDIs(message)

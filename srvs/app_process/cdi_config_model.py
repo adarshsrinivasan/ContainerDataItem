@@ -103,7 +103,7 @@ class Config:
     def to_proto_controller_cdi_configs(self):
         proto_controller_cdi_configs = []
         for _, cdi_config in self.cdis:
-            proto_controller_cdi_config = pb2.ControllerCdiConfig()
+            proto_controller_cdi_config = pb2.CdiConfig()
 
             proto_controller_cdi_config.process_id = self.process_id
             proto_controller_cdi_config.process_name = self.process_name
