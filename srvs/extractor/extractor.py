@@ -20,7 +20,7 @@ process_id = getenv_with_default(PROCESS_ID_ENV, "extractor")
 class Extractor(threading.Thread):
     def __init__(self, stream_id="", local_fetch_file_path="/tmp/out.avi", remote_video_save_dir_path="",
                  remote_video_fetch_path="", sftp_host="0.0.0.0", sftp_port=22, sftp_user="sftpuser",
-                 sftp_pwd="sftpuser", packed_data=""):
+                 sftp_pwd="sftpuser"):
 
         threading.Thread.__init__(self)
         self.stream_id = stream_id
@@ -31,7 +31,6 @@ class Extractor(threading.Thread):
         self.sftp_port = sftp_port
         self.sftp_user = sftp_user
         self.sftp_pwd = sftp_pwd
-        self.packed_data = packed_data
 
     def run(self):
         self.download_file()
@@ -43,15 +42,6 @@ class Extractor(threading.Thread):
 
     def get_video_from_path(self):
         return cv2.VideoCapture(self.local_fetch_file_path)
-
-    def pack_data(self, frame_count, x_shape, y_shape, frame_order, frame, done):
-        frame_shape = frame.shape
-        frame_data_type = frame.dtype.name
-        info_str = f"{self.stream_id}:{frame_count}:{frame_order}:{x_shape}:{y_shape}:{done}:{frame_data_type}:{frame_shape[0]}:{frame_shape[1]}:{frame_shape[2]}:{self.remote_video_save_dir_path}:{self.sftp_host}:{self.sftp_port}:{self.sftp_user}:{self.sftp_pwd} "
-        frame_data_str = frame.flatten().tostring()
-
-        self.packed_data = f"{info_str}\n{frame_data_str}"
-        # self.packed_data = zlib.compress(packed_data.encode('latin-1')).decode('latin-1')
 
     def extractor(self):
         logging.info(f"Started extracting frames for {self.stream_id}")

@@ -11,6 +11,7 @@ build-proto:
     --grpc_python_out=srvs/minion/rpc_api/ \
 	--python_out=srvs/extractor/rpc_api/ \
     --grpc_python_out=srvs/extractor/rpc_api/ \
+    --python_out=library/common/ \
 	controller-api.proto \
 	&& \
 	python3 \
@@ -72,6 +73,17 @@ build-minion:
 
 build-extractor:
 	$(eval SERVICE := extractor)
+	$(eval IMAGE := adarshzededa/cdi-${SERVICE}:latest)
+	docker build \
+		--file srvs/${SERVICE}/Dockerfile \
+		--build-arg service=${SERVICE} \
+		-t ${IMAGE} \
+		--platform linux/$(ARCH) . \
+	&& \
+	docker push ${IMAGE}
+
+build-detector:
+	$(eval SERVICE := detector)
 	$(eval IMAGE := adarshzededa/cdi-${SERVICE}:latest)
 	docker build \
 		--file srvs/${SERVICE}/Dockerfile \

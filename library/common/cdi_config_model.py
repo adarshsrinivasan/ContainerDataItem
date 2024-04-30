@@ -4,7 +4,7 @@ import os
 import yaml
 
 from library.shm.shm_lib import SharedMemory
-from srvs.extractor.rpc_api import controller_api_pb2 as pb2
+from library.common import controller_api_pb2 as pb2
 
 parent_config = None
 

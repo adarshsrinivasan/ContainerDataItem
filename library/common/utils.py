@@ -3,6 +3,8 @@ import random
 import string
 import base64
 
+import numpy as np
+
 
 def getenv_with_default(env_name, default):
     value = os.getenv(env_name)

@@ -42,6 +42,7 @@ def populate_and_transfer_cdis(config):
         raise Exception(f"perform_cdi_ops: No Extractor Cache found for stream_id: {submit_task_model.stream_id}")
 
     logging.info(f"perform_cdi_ops: populating CDIs for stream_id: {submit_task_model.stream_id}")
+    # TODO: Maybe try removing this?
     to_send_cdis = {}
 
     for cdi_key, cdi in config.cdis:

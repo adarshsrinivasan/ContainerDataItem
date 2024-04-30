@@ -139,6 +139,39 @@ services:
       - type: bind
         source: ../kube/common_config/process_config.yaml
         target: /etc/config/process_config.yaml
+
+  detector:
+    image: adarshzededa/cdi-detector:latest
+    restart: always
+    ports:
+      - "50021:50021"
+    ipc: host
+    depends_on:
+      - minion
+      - cache
+    build:
+      context: ../../
+      dockerfile: srvs/detector/Dockerfile
+      args:
+        - service=detector
+    environment:
+      NODE_IP: "minion"
+      PROCESS_ID: "ebe87a92-8f00-49d7-9133-05bc592a58d5"
+      CONTAINER_NAME: "detector"
+      CONTAINER_IP: "detector"
+      CONTAINER_NAMESPACE: "default"
+      RPC_HOST: "0.0.0.0"
+      RPC_PORT: 50021
+      CONTROLLER_HOST: controller
+      CONTROLLER_PORT: 50000
+      CONFIG_PATH: "/etc/config/process_config.yaml"
+    user: "996:24"
+    networks:
+      cdi-network: { }
+    volumes:
+      - type: bind
+        source: ../kube/common_config/process_config.yaml
+        target: /etc/config/process_config.yaml
 #  app_process:
 #    image: adarshzededa/cdi-app-process:latest
 #    restart: always

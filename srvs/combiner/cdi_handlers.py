@@ -5,9 +5,9 @@ import numpy as np
 
 from library.common.constants import CONTROLLER_HOST_ENV, CONTROLLER_PORT_ENV
 from library.common.utils import getenv_with_default, pack_data
-from srvs.extractor.rpc_api.controller_client_api_handlers import ControllerClient
+from srvs.combiner.rpc_api.controller_client_api_handlers import ControllerClient
 from library.common.cdi_config_model import populate_config_from_parent_config, get_parent_config
-from srvs.extractor.db.cache_ops import get_obj_from_cache, front_obj_of_cache_queue, add_obj_to_cache, \
+from srvs.combiner.db.cache_ops import get_obj_from_cache, front_obj_of_cache_queue, add_obj_to_cache, \
     dequeue_obj_from_cache_queue, delete_obj_from_cache
 
 controller_host = getenv_with_default(CONTROLLER_HOST_ENV, "0.0.0.0")
