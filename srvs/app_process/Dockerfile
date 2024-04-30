@@ -1,6 +1,6 @@
 FROM python:3.9
 
-ARG service=app_process
+ARG service=extractor
 
 WORKDIR /python-$service
 

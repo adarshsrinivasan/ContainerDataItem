@@ -1,3 +1,5 @@
+import logging
+
 import grpc
 
 from srvs.minion.rpc_api import minion_api_pb2_grpc as pb2_grpc, minion_api_pb2 as pb2
@@ -16,6 +18,7 @@ class MinionClient(object):
         self.stub = pb2_grpc.MinionControllerServiceStub(self.channel)
 
     def CreateCDIs(self, cdi_minion_table_list):
+        logging.info(f"CreateCDIs({self.host}:{self.server_port}): Sending request")
         request_list = []
         for cdi_minion_table in cdi_minion_table_list:
             request_list.append(cdi_minion_table.as_proto_cdi_config())

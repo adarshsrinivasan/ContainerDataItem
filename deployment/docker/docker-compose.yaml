@@ -52,8 +52,8 @@ services:
       SQL_USER: admin
       SQL_PASSWORD: admin
       SQL_DB: cdi
-      HOST: "0.0.0.0"
-      PORT: 50000
+      RPC_HOST: "0.0.0.0"
+      RPC_PORT: 50000
     user: "999:21"
     networks:
       cdi-network: { }
@@ -77,39 +77,41 @@ services:
       SQL_USER: admin
       SQL_PASSWORD: admin
       SQL_DB: cdi
-      HOST: "0.0.0.0"
-      PORT: 50001
+      RPC_HOST: "0.0.0.0"
+      RPC_PORT: 50001
       CONTROLLER_HOST: controller
       CONTROLLER_PORT: 50000
-      NODE_IP: "0.0.0.0"
-    user: "999:21"
+      NODE_IP: "minion"
+      CONTAINER_NAME: "minion"
+      CONTAINER_IP: "minion"
+      CONTAINER_NAMESPACE: "default"
+    user: "998:22"
     networks:
       cdi-network: { }
-
-  app_process:
-    image: adarshzededa/cdi-app-process:latest
-    restart: always
-    ports:
-      - "50002:50002"
-    ipc: host
-    depends_on:
-      - controller
-      - minion
-    build:
-      context: ../../
-      dockerfile: srvs/app_process/Dockerfile
-      args:
-        - service=app_process
-    environment:
-      HOST: "0.0.0.0"
-      PORT: 50002
-      CONTROLLER_HOST: controller
-      CONTROLLER_PORT: 50000
-      NODE_IP: "0.0.0.0"
-      PROCESS_ID: "dkjbwlbpwivbu"
-    user: "999:21"
-    networks:
-      cdi-network: { }
+#  app_process:
+#    image: adarshzededa/cdi-app-process:latest
+#    restart: always
+#    ports:
+#      - "50002:50002"
+#    ipc: host
+#    depends_on:
+#      - controller
+#      - minion
+#    build:
+#      context: ../../
+#      dockerfile: srvs/app_process/Dockerfile
+#      args:
+#        - service=app_process
+#    environment:
+#      HOST: "0.0.0.0"
+#      PORT: 50002
+#      CONTROLLER_HOST: controller
+#      CONTROLLER_PORT: 50000
+#      NODE_IP: "0.0.0.0"
+#      PROCESS_ID: "dkjbwlbpwivbu"
+#    user: "999:21"
+#    networks:
+#      cdi-network: { }
 
 
 volumes:

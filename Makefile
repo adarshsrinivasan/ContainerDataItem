@@ -1,4 +1,6 @@
 
+ARCH := arm64
+
 build-proto:
 	python3 \
 	-m grpc_tools.protoc \
@@ -34,11 +36,41 @@ build-shm-c-lib:
 	gcc -shared -fpic -o shm_lib_$(shell uname -s | tr A-Z a-z).so library/shm/shm_lib.c
 	chmod 777 shm_lib_$(shell uname -s | tr A-Z a-z).so
 
-build-controller:
-	docker compose -f deployment/docker/docker-compose.yaml build controller
+
+build-common:
+	$(eval SERVICE := common)
+	$(eval IMAGE := adarshzededa/cdi-${SERVICE}:latest)
+	docker build \
+		--file srvs/${SERVICE}/Dockerfile \
+		--build-arg service=${SERVICE} \
+		-t ${IMAGE} \
+		--platform linux/$(ARCH) . \
+	&& \
+	docker push ${IMAGE}
+
+build-controller: build-common
+	$(eval SERVICE := controller)
+	$(eval IMAGE := adarshzededa/cdi-${SERVICE}:latest)
+	docker build \
+		--file srvs/${SERVICE}/Dockerfile \
+		--build-arg service=${SERVICE} \
+		-t ${IMAGE} \
+		--platform linux/$(ARCH) . \
+	&& \
+	docker push ${IMAGE}
 
 build-minion:
-	docker compose -f deployment/docker/docker-compose.yaml build minion
+	$(eval SERVICE := minion)
+	$(eval IMAGE := adarshzededa/cdi-${SERVICE}:latest)
+	docker build \
+		--file srvs/${SERVICE}/Dockerfile \
+		--build-arg service=${SERVICE} \
+		-t ${IMAGE} \
+		--platform linux/$(ARCH) . \
+	&& \
+	docker push ${IMAGE}
+
+
 
 
 

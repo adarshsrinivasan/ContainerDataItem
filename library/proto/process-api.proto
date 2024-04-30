@@ -5,12 +5,21 @@ import "controller-api.proto";
 
 service ProcessService {
     rpc NotifyCDIsAccess(NotifyCDIsAccessRequest) returns (NotifyCDIsAccessResponse) {}
+    rpc TransferPayload(TransferPayloadRequest) returns (TransferPayloadResponse) {}
 }
 
 message NotifyCDIsAccessRequest {
-    repeated ControllerCdiConfig cdi_configs = 1;
+    repeated CdiConfig cdi_configs = 1;
 }
 
 message NotifyCDIsAccessResponse {
-    string err = 2;
+    string err = 1;
+}
+
+message TransferPayloadRequest {
+    string payload = 1;
+}
+
+message TransferPayloadResponse {
+    string err = 1;
 }

@@ -39,6 +39,11 @@ class ControllerServiceStub(object):
                 request_serializer=controller__api__pb2.CreateCDIsRequest.SerializeToString,
                 response_deserializer=controller__api__pb2.CreateCDIsResponse.FromString,
                 )
+        self.GetCDIsByProcessID = channel.unary_unary(
+                '/proto.ControllerService/GetCDIsByProcessID',
+                request_serializer=controller__api__pb2.GetCDIsByProcessIDRequest.SerializeToString,
+                response_deserializer=controller__api__pb2.GetCDIsByProcessIDResponse.FromString,
+                )
         self.TransferCDIs = channel.unary_unary(
                 '/proto.ControllerService/TransferCDIs',
                 request_serializer=controller__api__pb2.TransferCDIsRequest.SerializeToString,
@@ -84,6 +89,12 @@ class ControllerServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetCDIsByProcessID(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def TransferCDIs(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -123,6 +134,11 @@ def add_ControllerServiceServicer_to_server(servicer, server):
                     servicer.CreateCDIs,
                     request_deserializer=controller__api__pb2.CreateCDIsRequest.FromString,
                     response_serializer=controller__api__pb2.CreateCDIsResponse.SerializeToString,
+            ),
+            'GetCDIsByProcessID': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetCDIsByProcessID,
+                    request_deserializer=controller__api__pb2.GetCDIsByProcessIDRequest.FromString,
+                    response_serializer=controller__api__pb2.GetCDIsByProcessIDResponse.SerializeToString,
             ),
             'TransferCDIs': grpc.unary_unary_rpc_method_handler(
                     servicer.TransferCDIs,
@@ -226,6 +242,23 @@ class ControllerService(object):
         return grpc.experimental.unary_unary(request, target, '/proto.ControllerService/CreateCDIs',
             controller__api__pb2.CreateCDIsRequest.SerializeToString,
             controller__api__pb2.CreateCDIsResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetCDIsByProcessID(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/proto.ControllerService/GetCDIsByProcessID',
+            controller__api__pb2.GetCDIsByProcessIDRequest.SerializeToString,
+            controller__api__pb2.GetCDIsByProcessIDResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
