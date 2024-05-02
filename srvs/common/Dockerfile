@@ -18,6 +18,6 @@ RUN pip3 install -r srvs/$service/requirements.txt
 RUN make build-shm-c-lib
 
 ENV SERVICE=${service}
-ENV PYTHONPATH=/python-cdi
+ENV PYTHONPATH=/python-cdi:/python-cdi/srvs/${SERVICE}/rpc_api
 ENV OBJ_DET_MODEL_DIR_PATH=/python-cdi/srvs/${SERVICE}
 ENV SHM_DLL_DIR_PATH=/python-cdi

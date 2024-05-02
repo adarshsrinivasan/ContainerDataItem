@@ -14,7 +14,7 @@ def populate_and_transfer_cdis(config):
     logging.info("perform_cdi_ops: starting...")
     global controller_host, controller_port
     populate_config_from_parent_config(config=config)
-    for cdi_key, cdi in config.cdis:
+    for cdi_key, cdi in config.cdis.items():
         packed_data = cdi.read_data()
         detector = Object_Detector(packed_data=packed_data)
         processed_packed_data = detector.object_detector()

@@ -1,17 +1,32 @@
 # Python 3.9
 
-Flask==2.2.2
-Werkzeug==2.2.2
-grpcio==1.62.2
-protobuf==5.26.1
-protobuf3==0.2.1
-grpcio-health-checking==1.62.2
-grpcio-reflection==1.62.2
-numpy==1.24.3
-opencv-python==4.9.0.80
-paramiko==3.4.0
-psycopg2-binary==2.9.9
-redis==5.0.3
-torch==2.2.2
-ultralytics==8.1.46
+#Flask==2.2.2
+#Werkzeug==2.2.2
+#grpcio==1.62.2
+#protobuf==5.26.1
+#protobuf3==0.2.1
+#grpcio-health-checking==1.62.2
+#grpcio-reflection==1.62.2
+#numpy==1.24.3
+#opencv-python==4.9.0.80
+#paramiko==3.4.0
+#psycopg2-binary==2.9.9
+#redis==5.0.3
+#torch==2.2.2
+#ultralytics==8.1.46
+
+Flask
+Werkzeug
+grpcio
+protobuf
+protobuf3
+grpcio-health-checking
+grpcio-reflection
+numpy
+opencv-python
+paramiko
+psycopg2-binary
+redis
+torch
+ultralytics
 

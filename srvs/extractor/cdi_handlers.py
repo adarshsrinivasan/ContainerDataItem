@@ -8,7 +8,7 @@ from library.common.utils import getenv_with_default, pack_data
 from srvs.extractor.rpc_api.controller_client_api_handlers import ControllerClient
 from library.common.cdi_config_model import populate_config_from_parent_config, get_parent_config
 from srvs.extractor.db.cache_ops import get_obj_from_cache, front_obj_of_cache_queue, add_obj_to_cache, \
-    dequeue_obj_from_cache_queue, delete_obj_from_cache
+    dequeue_obj_from_cache_queue, delete_obj_from_cache, get_frame_from_cache, delete_frame_from_cache
 
 controller_host = getenv_with_default(CONTROLLER_HOST_ENV, "0.0.0.0")
 controller_port = getenv_with_default(CONTROLLER_PORT_ENV, "50000")
@@ -42,19 +42,16 @@ def populate_and_transfer_cdis(config):
         raise Exception(f"perform_cdi_ops: No Extractor Cache found for stream_id: {submit_task_model.stream_id}")
 
     logging.info(f"perform_cdi_ops: populating CDIs for stream_id: {submit_task_model.stream_id}")
-    # TODO: Maybe try removing this?
     to_send_cdis = {}
 
-    for cdi_key, cdi in config.cdis:
+    for cdi_key, cdi in config.cdis.items():
         cdi.clear_data()
-        ret, frame = extractor_cache_obj.player.read()
-        logging.info(
-            f"perform_cdi_ops: Extracted frame {extractor_cache_obj.frame_order + 1} out of {extractor_cache_obj.frame_count} for {submit_task_model.stream_id}")
-        if not ret:
+        extractor_cache_obj.frame_order += 1
+        if extractor_cache_obj.frame_order > extractor_cache_obj.frame_count:
             frame = np.zeros(shape=(1, 1, 1), dtype='uint8')
             packed_data = pack_data(stream_id=submit_task_model.stream_id,
                                     frame_count=extractor_cache_obj.frame_count,
-                                    frame_order=(extractor_cache_obj.frame_order + 1),
+                                    frame_order=extractor_cache_obj.frame_order,
                                     x_shape=extractor_cache_obj.x_shape,
                                     y_shape=extractor_cache_obj.y_shape, done=True, frame=frame,
                                     remote_video_save_dir_path=submit_task_model.remote_video_save_dir_path,
@@ -66,9 +63,12 @@ def populate_and_transfer_cdis(config):
             delete_obj_from_cache(stream_id=submit_task_model.stream_id)
             logging.info(f"perform_cdi_ops: Done processing all frames for stream_id {submit_task_model.stream_id}")
             break
+        frame = get_frame_from_cache(stream_id=submit_task_model.stream_id, frame_order=extractor_cache_obj.frame_order)
+        logging.info(
+            f"perform_cdi_ops: Extracted frame {extractor_cache_obj.frame_order} out of {extractor_cache_obj.frame_count} for {submit_task_model.stream_id}")
         packed_data = pack_data(stream_id=submit_task_model.stream_id,
                                 frame_count=extractor_cache_obj.frame_count,
-                                frame_order=(extractor_cache_obj.frame_order + 1),
+                                frame_order=extractor_cache_obj.frame_order,
                                 x_shape=extractor_cache_obj.x_shape,
                                 y_shape=extractor_cache_obj.y_shape, done=False, frame=frame,
                                 remote_video_save_dir_path=submit_task_model.remote_video_save_dir_path,
@@ -76,11 +76,9 @@ def populate_and_transfer_cdis(config):
                                 sftp_user=submit_task_model.sftp_user, sftp_pwd=submit_task_model.sftp_pwd)
         cdi.write_data(data=packed_data)
         to_send_cdis[cdi_key] = cdi
-        extractor_cache_obj.frame_order += 1
         add_obj_to_cache(stream_id=submit_task_model.stream_id, obj=extractor_cache_obj)
+        delete_frame_from_cache(stream_id=submit_task_model.stream_id, frame_order=extractor_cache_obj.frame_order)
 
-    extractor_cache_obj.player.release()
-    cv2.destroyAllWindows()
     config.cdis = to_send_cdis
     logging.info(
         f"perform_cdi_ops: Transferring CDI to process_id: {config.transfer_id} for stream_id: {submit_task_model.stream_id}")

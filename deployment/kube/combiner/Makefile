@@ -9,4 +9,4 @@ delete:
 
 forward:
 	sleep 10
-	nohup kubectl port-forward service/combiner-service --address 0.0.0.0  3000:50000 > /dev/null 2>&1 &
+	nohup kubectl port-forward service/combiner-service --address 0.0.0.0  50000:50000 > /dev/null 2>&1 &

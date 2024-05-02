@@ -72,14 +72,14 @@ class Object_Detector(threading.Thread):
         stream_id, frame_count, frame_order, x_shape, y_shape, done, frame, remote_video_save_dir_path, sftp_host, sftp_port, sftp_user, sftp_pwd = unpack_data(
             packed_data=self.packed_data)
         if not done:
-            logging.info(f"object_detector: Scoring frame {frame_order + 1} out of {frame_count} for {stream_id}")
+            logging.info(f"object_detector: Scoring frame {frame_order} out of {frame_count} for {stream_id}")
             results = self.score_frame(frame)
             logging.info(
-                f"object_detector: Plotting boxes on frame {frame_order + 1} out of {frame_count} for {stream_id}")
+                f"object_detector: Plotting boxes on frame {frame_order} out of {frame_count} for {stream_id}")
             frame = self.plot_boxes(results, frame)
 
-        logging.info(f"Packing frame {frame_order + 1} out of {frame_count} for {self.stream_id}")
-        self.packed_data = pack_data(stream_id=stream_id, frame_count=frame_count, frame_order=(frame_order + 1),
+        logging.info(f"Packing frame {frame_order} out of {frame_count} for {stream_id}")
+        self.packed_data = pack_data(stream_id=stream_id, frame_count=frame_count, frame_order=frame_order,
                                      x_shape=x_shape, y_shape=y_shape, done=True, frame=frame,
                                      remote_video_save_dir_path=remote_video_save_dir_path, sftp_host=sftp_host,
                                      sftp_port=sftp_port, sftp_user=sftp_user, sftp_pwd=sftp_pwd)

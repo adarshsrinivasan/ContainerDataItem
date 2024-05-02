@@ -3,7 +3,7 @@ import os
 
 import grpc
 
-from srvs.extractor.rpc_api import controller_api_pb2_grpc as pb2_grpc, controller_api_pb2 as pb2
+from srvs.common.rpc_api import controller_api_pb2_grpc as pb2_grpc, controller_api_pb2 as pb2
 
 
 class ControllerClient(object):
@@ -43,9 +43,11 @@ class ControllerClient(object):
 
     def TransferCDIs(self, config):
         logging.info(f"TransferCDIs({self.host}:{self.server_port}): Sending request")
+        logging.info(f"TransferCDIs: process_id: {config.process_id}, transfer_id: {config.transfer_id}, transfer_mode: {config.transfer_mode}")
+        logging.info(f"TransferCDIs: process_id: {type(config.process_id)}, transfer_id: {type(config.transfer_id)}, transfer_mode: {type(config.transfer_mode)}")
         proto_controller_cdi_configs = config.to_proto_controller_cdi_configs()
         message = pb2.TransferCDIsRequest(id=config.process_id, transfer_id=config.transfer_id,
-                                          transfer_mode=config.transfer_mode, cdi_configs=proto_controller_cdi_configs)
+                                          transfer_mode=str(config.transfer_mode), cdi_configs=proto_controller_cdi_configs)
         return self.stub.TransferCDIs(message)
 
     def DeleteCDIs(self, process_id, config):

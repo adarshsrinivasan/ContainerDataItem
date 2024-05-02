@@ -65,6 +65,7 @@ services:
       SQL_DB: cdi
       RPC_HOST: "0.0.0.0"
       RPC_PORT: 50000
+      DEPLOY_PLATFORM: "docker"
     user: "999:21"
     networks:
       cdi-network: { }

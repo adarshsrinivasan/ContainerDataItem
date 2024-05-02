@@ -20,7 +20,7 @@ class SHM_access:
         except Exception as err:
             logging.error(f"Stat Error: {err}")
             return
-        return shmid_ds.contents.shm_perm.uid == uid and shmid_ds.contents.shm_perm.gid == gid
+        return (shmid_ds.contents.shm_perm.uid == uid and shmid_ds.contents.shm_perm.gid == gid) or (shmid_ds.contents.shm_perm.cuid == uid and shmid_ds.contents.shm_perm.cgid == gid)
 
     def __wait_for_access(self, timeout_seconds=1000):
         self.__myshm.shm_id = self.shm_id
@@ -51,7 +51,7 @@ class SHM_access:
         self.__attach()
         self.__myshm.write_data(data)
         self.__detach()
-        logging.info(f"shm_write_data: wrote '{data}' to shared memory with shm_id: {self.shm_id}")
+        logging.info(f"shm_write_data: wrote data to shared memory with shm_id: {self.shm_id}")
 
     def read_data(self, length=0) -> str:
         self.__myshm.shm_id = self.shm_id
@@ -61,7 +61,7 @@ class SHM_access:
         data = self.__myshm.read_data(length)
         self.__detach()
         if len(data) > 0:
-            logging.info(f"shm_read_data: read '{data}' from shared memory with shm_id: {self.shm_id}")
+            logging.info(f"shm_read_data: read data from shared memory with shm_id: {self.shm_id}")
         return data
 
     def clear_data(self):

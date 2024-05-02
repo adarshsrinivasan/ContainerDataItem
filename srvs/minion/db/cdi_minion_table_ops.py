@@ -1,6 +1,6 @@
 import logging
 
-import srvs.minion.rpc_api.minion_api_pb2 as pb2
+import srvs.common.rpc_api.controller_api_pb2 as pb2
 
 from typing import List
 from library.db.sql_db import execute_sql_command
@@ -26,8 +26,8 @@ def init_cdi_minion_data_table():
 
 
 class CDI_Minion_Table:
-    def __init__(self, cdi_id="", process_id="", process_name="", app_id="", app_name="", cdi_key="", cdi_size_bytes="",
-                 cdi_access_mode="", uid="", gid="", payload=""):
+    def __init__(self, cdi_id="", process_id="", process_name="", app_id="", app_name="", cdi_key=0, cdi_size_bytes=0,
+                 cdi_access_mode=0, uid=0, gid=0, payload=""):
         self.id = -1
         self.cdi_id = cdi_id
         self.process_id = process_id
@@ -66,7 +66,7 @@ class CDI_Minion_Table:
 
     def update_by_cdi_id(self):
         execute_sql_command(
-            f"""UPDATE {TABLE_NAME} SET process_id = {self.process_id}, SET process_name = {self.process_name}, uid = {self.uid}, gid = {self.gid}, cdi_access_mode = {self.cdi_access_mode} WHERE cdi_id = '{self.cdi_id}';""")
+            f"""UPDATE {TABLE_NAME} SET process_id = '{self.process_id}', process_name = '{self.process_name}', uid = {self.uid}, gid = {self.gid}, cdi_access_mode = {self.cdi_access_mode} WHERE cdi_id = '{self.cdi_id}';""")
 
     def delete_by_cdi_id(self):
         execute_sql_command(f"""DELETE FROM {TABLE_NAME} WHERE cdi_id='{self.cdi_id}';""")
@@ -78,11 +78,11 @@ class CDI_Minion_Table:
         self.process_name = tuple_data[3]
         self.app_id = tuple_data[4]
         self.app_name = tuple_data[5]
-        self.cdi_key = tuple_data[6]
-        self.cdi_size_bytes = tuple_data[7]
-        self.cdi_access_mode = tuple_data[8]
-        self.uid = tuple_data[9]
-        self.gid = tuple_data[10]
+        self.cdi_key = int(tuple_data[6])
+        self.cdi_size_bytes = int(tuple_data[7])
+        self.cdi_access_mode = int(tuple_data[8])
+        self.uid = int(tuple_data[9])
+        self.gid = int(tuple_data[10])
 
     def load_proto_cdi_config(self, proto_cdi_config):
         self.cdi_id = proto_cdi_config.cdi_id
@@ -95,6 +95,7 @@ class CDI_Minion_Table:
         self.cdi_access_mode = proto_cdi_config.cdi_access_mode
         self.uid = proto_cdi_config.uid
         self.gid = proto_cdi_config.gid
+        self.payload = proto_cdi_config.payload
 
     def as_proto_cdi_config(self):
         proto_cdi_config = pb2.CdiConfig()
@@ -109,5 +110,6 @@ class CDI_Minion_Table:
         proto_cdi_config.cdi_access_mode = self.cdi_access_mode
         proto_cdi_config.uid = self.uid
         proto_cdi_config.gid = self.gid
+        proto_cdi_config.payload = self.payload
 
         return proto_cdi_config

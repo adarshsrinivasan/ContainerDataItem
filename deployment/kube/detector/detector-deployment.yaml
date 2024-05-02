@@ -12,19 +12,41 @@ spec:
       labels:
         app: detector
     spec:
+      securityContext:
+        runAsUser: 996
+        runAsGroup: 24
+      hostIPC: True
       containers:
         - name: detector
-          image: adarshzededa/cdi-detector-rpc:latest
+          image: adarshzededa/cdi-detector:latest
           imagePullPolicy: Always
           env:
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: CONTAINER_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: CONTAINER_IP
+              value: "detector-service"
+            - name: CONTAINER_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: PROCESS_ID
+              value: "ebe87a92-8f00-49d7-9133-05bc592a58d5"
             - name: RPC_HOST
               value: "0.0.0.0"
             - name: RPC_PORT
               value: "50000"
-            - name: NEXT_RPC_HOST
-              value: "combiner-service"
-            - name: NEXT_RPC_PORT
+            - name: CONTROLLER_HOST
+              value: "controller-service"
+            - name: CONTROLLER_PORT
               value: "50000"
+            - name: CONFIG_PATH
+              value: "/etc/config/process_config.yaml"
           resources:
             requests:
               cpu: 100m
@@ -41,3 +63,12 @@ spec:
               port: 50000
             initialDelaySeconds: 10
             periodSeconds: 60
+          volumeMounts:
+            - name: conf
+              mountPath: /etc/config/
+              readOnly: false
+      volumes:
+        - name: conf
+          configMap:
+            name: cdi-config
+            defaultMode: 0755

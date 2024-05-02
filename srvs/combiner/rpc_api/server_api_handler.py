@@ -3,8 +3,8 @@ import logging
 import grpc
 import threading
 
-import srvs.combiner.rpc_api.process_api_pb2_grpc as pb2_grpc
-import srvs.combiner.rpc_api.process_api_pb2 as pb2
+import srvs.common.rpc_api.process_api_pb2_grpc as pb2_grpc
+import srvs.common.rpc_api.process_api_pb2 as pb2
 
 from concurrent import futures
 from grpc_health.v1 import health
@@ -26,7 +26,7 @@ class ProcessService(pb2_grpc.ProcessServiceServicer):
     def NotifyCDIsAccess(self, request, context):
         logging.info(f"NotifyCDIsAccess: Processing request")
         config = Config()
-        config.from_proto_controller_cdi_configs(request)
+        config.from_proto_controller_cdi_configs(request.cdi_configs)
         async_populate_and_transfer_cdis = threading.Thread(target=populate_and_transfer_cdis, args=(config,), kwargs={})
         async_populate_and_transfer_cdis.start()
         return pb2.NotifyCDIsAccessResponse(err="")

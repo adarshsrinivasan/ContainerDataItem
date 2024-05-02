@@ -17,7 +17,7 @@ def populate_and_transfer_cdis(config):
     populate_config_from_parent_config(config=config)
     done = False
     combiner_obj = Combiner()
-    for cdi_key, cdi in config.cdis:
+    for cdi_key, cdi in config.cdis.items():
         packed_data = cdi.read_data()
         combiner_obj = Combiner(local_buffer_dir=local_buffer_dir, packed_data=packed_data)
         done = combiner_obj.combiner()

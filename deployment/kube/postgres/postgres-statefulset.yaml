@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  serviceName: "postgres"
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      terminationGracePeriodSeconds: 30
+      initContainers:
+        - name: init
+          image: postgres:15.0
+          command: [ "bash", "-c" ]
+          args:
+            - |
+              #create archive directory
+              mkdir -p /data/archive && chown -R 999:999 /data/archive
+          volumeMounts:
+            - name: data
+              mountPath: /data
+              readOnly: false
+      containers:
+        - name: postgres
+          image: postgres:15.0
+          args: ["-c", "config_file=/config/postgresql.conf"]
+          ports:
+            - containerPort: 5432
+              name: database
+          env:
+            - name: PGDATA
+              value: "/data/pgdata"
+            - name: POSTGRES_USER
+              value: "admin"
+            - name: POSTGRES_PASSWORD
+              value: "admin"
+            - name: POSTGRES_DB
+              value: "cdi"
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: false
+            - name: data
+              mountPath: /data
+              readOnly: false
+      volumes:
+        - name: config
+          configMap:
+            name: postgres
+            defaultMode: 0755
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: "nfs-client"
+        resources:
+          requests:
+            storage: 100Mi

@@ -2,7 +2,7 @@ import logging
 
 import grpc
 
-from srvs.minion.rpc_api import controller_api_pb2_grpc as pb2_grpc, controller_api_pb2 as pb2
+from srvs.common.rpc_api import controller_api_pb2_grpc as pb2_grpc, controller_api_pb2 as pb2
 
 
 class ControllerClient(object):

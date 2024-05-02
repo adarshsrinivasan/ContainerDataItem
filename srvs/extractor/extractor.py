@@ -9,7 +9,8 @@ from library.common.utils import getenv_with_default
 from library.common.cdi_config_model import Config
 from srvs.extractor.cdi_handlers import populate_and_transfer_cdis
 
-from srvs.extractor.db.cache_ops import add_obj_to_cache, Extractor_cache_data, front_obj_of_cache_queue
+from srvs.extractor.db.cache_ops import add_obj_to_cache, Extractor_cache_data, front_obj_of_cache_queue, \
+    add_frame_to_cache
 from srvs.extractor.rpc_api.controller_client_api_handlers import ControllerClient
 
 controller_host = getenv_with_default(CONTROLLER_HOST_ENV, "0.0.0.0")
@@ -50,10 +51,20 @@ class Extractor(threading.Thread):
         frame_count = int(player.get(cv2.CAP_PROP_FRAME_COUNT))
         x_shape = int(player.get(cv2.CAP_PROP_FRAME_WIDTH))
         y_shape = int(player.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        frame_order = 0
-        extractor_cache_obj = Extractor_cache_data(player=player, frame_count=frame_count,
-                                                   x_shape=x_shape, y_shape=y_shape, frame_order=frame_order)
+        extractor_cache_obj = Extractor_cache_data(frame_count=frame_count, x_shape=x_shape, y_shape=y_shape,
+                                                   frame_order=0)
         add_obj_to_cache(stream_id=self.stream_id, obj=extractor_cache_obj)
+
+        frame_order = 0
+        while True:
+            ret, frame = player.read()
+            if not ret:
+                break
+            frame_order += 1
+            logging.info(f"Extracted frame {frame_order} out of {frame_count} for {self.stream_id}")
+            add_frame_to_cache(stream_id=self.stream_id, frame_order=frame_order, frame=frame)
+        player.release()
+        cv2.destroyAllWindows()
 
         submit_task_model = front_obj_of_cache_queue()
         if submit_task_model is None:

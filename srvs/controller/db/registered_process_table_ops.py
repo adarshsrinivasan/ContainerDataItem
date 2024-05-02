@@ -14,14 +14,14 @@ def init_registered_process_table():
                 namespace VARCHAR (50) NOT NULL,
                 node_ip VARCHAR (50) NOT NULL,
                 rpc_ip VARCHAR (50) UNIQUE NOT NULL,
-                rpc_port VARCHAR (50) NOT NULL,
-                uid VARCHAR (50) NOT NULL,
-                gid VARCHAR (50) NOT NULL);""")
+                rpc_port BIGINT NOT NULL,
+                uid BIGINT NOT NULL,
+                gid BIGINT NOT NULL);""")
     logging.info(f"Created {TABLE_NAME} Table!")
 
 
 class Registered_Process_Table:
-    def __init__(self, process_id="", name="", namespace="", node_ip="", rpc_ip="", rpc_port="", uid="", gid=""):
+    def __init__(self, process_id="", name="", namespace="", node_ip="", rpc_ip="", rpc_port=0, uid=0, gid=0):
         self.id = -1
         self.process_id = process_id
         self.name = name
@@ -34,7 +34,7 @@ class Registered_Process_Table:
 
     def insert(self):
         execute_sql_command(
-            f"""INSERT INTO {TABLE_NAME}(process_id, name, namespace, node_ip, rpc_ip, rpc_port, uid, gid) VALUES('{self.process_id}', '{self.name}', '{self.namespace}', '{self.node_ip}', '{self.rpc_ip}', '{self.rpc_port}', '{self.uid}', '{self.gid}');""")
+            f"""INSERT INTO {TABLE_NAME}(process_id, name, namespace, node_ip, rpc_ip, rpc_port, uid, gid) VALUES('{self.process_id}', '{self.name}', '{self.namespace}', '{self.node_ip}', '{self.rpc_ip}', {self.rpc_port}, {self.uid}, {self.gid});""")
 
     def get_by_process_id(self):
         result = None
@@ -46,7 +46,7 @@ class Registered_Process_Table:
 
     def update_by_process_id(self):
         execute_sql_command(
-            f"""UPDATE {TABLE_NAME} SET name = '{self.name}', namespace = '{self.namespace}', node_ip = '{self.node_ip}', rpc_ip = '{self.rpc_ip}', rpc_port = '{self.rpc_port}', uid = '{self.uid}', gid = '{self.gid}' WHERE process_id = '{self.process_id}';""")
+            f"""UPDATE {TABLE_NAME} SET name = '{self.name}', namespace = '{self.namespace}', node_ip = '{self.node_ip}', rpc_ip = '{self.rpc_ip}', rpc_port = {self.rpc_port}, uid = {self.uid}, gid = {self.gid} WHERE process_id = '{self.process_id}';""")
 
     def delete_by_process_id(self):
         execute_sql_command(f"""DELETE FROM {TABLE_NAME} WHERE process_id='{self.process_id}';""")
@@ -58,6 +58,6 @@ class Registered_Process_Table:
         self.namespace = tuple_data[3]
         self.node_ip = tuple_data[4]
         self.rpc_ip = tuple_data[5]
-        self.rpc_port = tuple_data[6]
-        self.uid = tuple_data[7]
-        self.gid = tuple_data[8]
+        self.rpc_port = int(tuple_data[6])
+        self.uid = int(tuple_data[7])
+        self.gid = int(tuple_data[8])

@@ -1,8 +1,8 @@
 import logging
 
 import grpc
-import srvs.controller.rpc_api.minion_api_pb2_grpc as pb2_grpc
-import srvs.controller.rpc_api.minion_api_pb2 as pb2
+import srvs.common.rpc_api.minion_api_pb2_grpc as pb2_grpc
+import srvs.common.rpc_api.minion_api_pb2 as pb2
 
 
 class MinionClient(object):
@@ -27,6 +27,7 @@ class MinionClient(object):
 
     def UpdateCDIs(self, cdi_controller_table_list):
         logging.info(f"UpdateCDIs({self.host}:{self.server_port}): Sending request")
+        logging.error(f"UpdateCDIs: Updated: process_id: {cdi_controller_table_list[0].process_id}, process_name: {cdi_controller_table_list[0].process_name}, uid: {cdi_controller_table_list[0].uid}, gid: {cdi_controller_table_list[0].gid}, cdi_access_mode: {cdi_controller_table_list[0].cdi_access_mode}")
         request_list = []
         for cdi_controller_table in cdi_controller_table_list:
             request_list.append(cdi_controller_table.as_proto_cdi_config())

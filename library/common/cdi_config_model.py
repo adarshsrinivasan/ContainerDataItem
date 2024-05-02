@@ -4,7 +4,7 @@ import os
 import yaml
 
 from library.shm.shm_lib import SharedMemory
-from library.common import controller_api_pb2 as pb2
+from srvs.common.rpc_api import controller_api_pb2 as pb2
 
 parent_config = None
 
@@ -96,7 +96,7 @@ class CDI(PrettyPrinter):
         self.__attach()
         self.__myshm.write_data(data)
         self.__detach()
-        logging.info(f"CDI_Config - Write: wrote '{data}' to shared memory with shm_id: {self.__myshm.shm_id}")
+        logging.info(f"CDI_Config - Write: wrote data to shared memory with shm_id: {self.__myshm.shm_id}")
 
     def read_data(self, length=0) -> str:
         if length == 0:
@@ -107,7 +107,7 @@ class CDI(PrettyPrinter):
         data = self.__myshm.read_data(length)
         self.__detach()
         if len(data) > 0:
-            logging.info(f"CDI_Config - Read: read '{data}' from shared memory with shm_id: {self.__myshm.shm_id}")
+            logging.info(f"CDI_Config - Read: read data from shared memory with shm_id: {self.__myshm.shm_id}")
         return data
 
     def clear_data(self):
@@ -177,14 +177,10 @@ class Config(PrettyPrinter):
     def from_proto_controller_cdi_configs(self, proto_controller_cdi_configs):
         cdis = {}
         for proto_controller_cdi_config in proto_controller_cdi_configs:
-            cdi = CDI()
-
-            cdi.cdi_id = proto_controller_cdi_config.cdi_id
-            cdi.cdi_key = proto_controller_cdi_config.cdi_key
-            cdi.cdi_size_bytes = proto_controller_cdi_config.cdi_size_bytes
-            cdi.cdi_access_mode = proto_controller_cdi_config.cdi_access_mode
-            cdi.uid = proto_controller_cdi_config.uid
-            cdi.gid = proto_controller_cdi_config.gid
+            cdi = CDI(cdi_id=proto_controller_cdi_config.cdi_id, cdi_key=proto_controller_cdi_config.cdi_key,
+                      cdi_size_bytes=proto_controller_cdi_config.cdi_size_bytes,
+                      cdi_access_mode=proto_controller_cdi_config.cdi_access_mode, uid=proto_controller_cdi_config.uid,
+                      gid=proto_controller_cdi_config.gid)
 
             cdis[cdi.cdi_id] = cdi
         self.process_id = proto_controller_cdi_configs[0].process_id
@@ -212,7 +208,6 @@ class Config(PrettyPrinter):
         cdis_dict = my_config_dict["cdis"]
 
         cdis = {}
-
         for cdi_dict in cdis_dict:
             cdis[cdi_dict["cdi_id"]] = CDI(
                 cdi_id=cdi_dict["cdi_id"],

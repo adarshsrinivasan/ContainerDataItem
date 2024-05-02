@@ -15,6 +15,9 @@ app = Flask(__name__)
 API_URL_PREFIX = "/api/v1"
 local_buffer_dir = getenv_with_default(LOCAL_BUFFER_DIR_ENV, "/tmp")
 
+logging.getLogger('werkzeug').setLevel(logging.WARNING)
+app.logger.setLevel(logging.WARNING)
+
 
 
 @app.route(f"{API_URL_PREFIX}/submitTask", methods=['POST'])

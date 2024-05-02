@@ -7,7 +7,7 @@ from grpc_health.v1 import health_pb2 as _health_pb2
 from grpc_health.v1 import health_pb2_grpc as _health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 
-from srvs.minion.rpc_api import minion_api_pb2_grpc as pb2_grpc, minion_api_pb2 as pb2
+from srvs.common.rpc_api import minion_api_pb2_grpc as pb2_grpc, minion_api_pb2 as pb2
 from library.common.utils import decode_payload, encode_payload
 from library.shm.shm_lib import SharedMemory
 from library.shm.shm_ops import SHM_access
@@ -15,6 +15,7 @@ from srvs.minion.db.cdi_minion_table_ops import CDI_Minion_Table
 from srvs.minion.rpc_api.minion_client_api_handlers import MinionClient
 
 _THREAD_POOL_SIZE = 256
+_GRPC_MSG_SIZE = 20 * 1024 * 1024
 
 
 class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
@@ -26,54 +27,58 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
         logging.info(f"CreateCDIs: Processing request")
         for cdi_config in request.cdi_configs:
             # convert the proto cdi config to CDI_Minion_Table model
-            cdi_minion_table = CDI_Minion_Table()
-            cdi_minion_table.load_proto_cdi_config(cdi_config)
+            cdi_minion_table = CDI_Minion_Table(cdi_id=cdi_config.cdi_id)
             logging.info(f"CreateCDIs: Fetching cdi record with key: {cdi_minion_table.cdi_id}")
             # check if we already created the CDI
             result = cdi_minion_table.get_by_cdi_id()
+            cdi_minion_table.load_proto_cdi_config(cdi_config)
+
+            logging.error(f"CreateCDIs: Processing cdi record with key: {cdi_minion_table.cdi_id}")
+            # if not created, the creat it and set right permissions
+            shm = SharedMemory(size=cdi_minion_table.cdi_size_bytes, key=cdi_minion_table.cdi_key,
+                               shm_mode=cdi_minion_table.cdi_access_mode, uid=cdi_minion_table.uid,
+                               gid=cdi_minion_table.gid, create_shm=True)
+            shm_access = SHM_access()
+            logging.info(
+                f"Minion-CreateCDIs: Accessing SharedMemory for App: {cdi_minion_table.app_id}, CDI: {cdi_minion_table.cdi_id}")
+            try:
+                shm_access.shm_id = shm.create()
+                shm_access.size = cdi_minion_table.cdi_size_bytes
+            except Exception as err:
+                logging.error(f"CreateCDIs: {err}")
+                err = f"Exception while creating SharedMemory for App: {cdi_minion_table.app_id}, CDI: {cdi_minion_table.cdi_id}: {err}"
+                return pb2.MinionCreateCDIsResponse(err=err)
+
+            # Set the right permissions
+            try:
+                shm.print_stat()
+                shm.set(uid=cdi_minion_table.uid, gid=cdi_minion_table.gid,
+                        shm_mode=cdi_minion_table.cdi_access_mode)
+            except Exception as err:
+                err = f"Exception while changing permission of SharedMemory for App: {cdi_minion_table.app_id}, CDI: {cdi_minion_table.cdi_id}: {err}"
+                logging.error(f"CreateCDIs: {err}")
+                return pb2.MinionCreateCDIsResponse(err=err)
+
             if result is None:
-                logging.error(f"CreateCDIs: Creating cdi record with key: {cdi_minion_table.cdi_id}")
-                # if not created, the creat it and set right permissions
-                shm = SharedMemory(size=cdi_minion_table.cdi_size_bytes, key=cdi_minion_table.cdi_key,
-                                   shm_mode=cdi_minion_table.cdi_access_mode, uid=cdi_minion_table.uid,
-                                   gid=cdi_minion_table.gid)
-                shm_access = SHM_access()
-                logging.info(
-                    f"Minion-CreateCDIs: Creating new SharedMemory for App: {cdi_minion_table.app_id}, CDI: {cdi_minion_table.cdi_id}")
-                try:
-                    shm_access.shm_id = shm.create()
-                    shm_access.size = cdi_minion_table.cdi_size_bytes
-                except Exception as err:
-                    logging.error(f"CreateCDIs: {err}")
-                    err = f"Exception while creating SharedMemory for App: {cdi_minion_table.app_id}, CDI: {cdi_minion_table.cdi_id}: {err}"
-                    return pb2.MinionCreateCDIsResponse(err=err)
-
-                # Set the right permissions
-                try:
-                    shm.set(uid=cdi_minion_table.uid, gid=cdi_minion_table.gid,
-                            shm_mode=cdi_minion_table.cdi_access_mode)
-                except Exception as err:
-                    err = f"Exception while changing permission of SharedMemory for App: {cdi_minion_table.app_id}, CDI: {cdi_minion_table.cdi_id}: {err}"
-                    logging.error(f"CreateCDIs: {err}")
-                    return pb2.MinionCreateCDIsResponse(err=err)
-                shm.print_stat() # TODO: Remove
-
+                logging.error(f"CreateCDIs: Inserting cdi record with key: {cdi_minion_table.cdi_id}")
+                # insert the new record into the DB
+                cdi_minion_table.insert()
+            else:
+                logging.error(f"CreateCDIs: Updating cdi record with key: {cdi_minion_table.cdi_id}")
                 # If the request contains a payload, then populate the CDI with the payload.
                 if cdi_minion_table.payload != "":
                     shm_access.clear_data()
-                    shm_access.write_data(decode_payload(cdi_minion_table.payload))
-                # insert the new record into the DB
-                cdi_minion_table.insert()
-                logging.info(f"CreateCDIs: Successfully created cdi record for key: {cdi_minion_table.cdi_id}")
+                    shm_access.write_data(cdi_minion_table.payload)
+                cdi_minion_table.update_by_cdi_id()
+
+            logging.info(f"CreateCDIs: Successfully created cdi record for key: {cdi_minion_table.cdi_id}")
         return pb2.MinionCreateCDIsResponse(err="")
 
     # UpdateCDIs handles the RPC request from Controller to update the permissions of a CDI
     def UpdateCDIs(self, request, context):
         logging.info(f"UpdateCDIs: Processing request")
         for cdi_config in request.cdi_configs:
-            # convert the proto cdi config to CDI_Minion_Table model
-            cdi_minion_table = CDI_Minion_Table()
-            cdi_minion_table.load_proto_cdi_config(cdi_config)
+            cdi_minion_table = CDI_Minion_Table(cdi_id=cdi_config.cdi_id)
             logging.info(f"UpdateCDIs: Fetching cdi record with key: {cdi_minion_table.cdi_id}")
             # check if the CDI is managed by the Minion
             result = cdi_minion_table.get_by_cdi_id()
@@ -82,10 +87,15 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
                 # if not, then return an error
                 err = f"Minion-UpdateCDIs: Couldn't find CDI with id: {cdi_minion_table.cdi_id}"
                 return pb2.MinionUpdateCDIsResponse(err=err)
+            # convert the proto cdi config to CDI_Minion_Table model
+            cdi_minion_table.load_proto_cdi_config(cdi_config)
+
             # if present, then update the permissions of the CDI
             shm = SharedMemory(size=cdi_minion_table.cdi_size_bytes, key=cdi_minion_table.cdi_key,
                                shm_mode=cdi_minion_table.cdi_access_mode, uid=cdi_minion_table.uid,
                                gid=cdi_minion_table.gid)
+            logging.info(f"UpdateCDIs: Before update")
+            shm.print_stat()
 
             try:
                 shm.set(uid=cdi_minion_table.uid, gid=cdi_minion_table.gid, shm_mode=cdi_minion_table.cdi_access_mode)
@@ -93,6 +103,9 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
                 err = f"Exception while changing permission of SharedMemory for App: {cdi_minion_table.app_id}, CDI: {cdi_minion_table.cdi_id}: {err}"
                 logging.error(f"UpdateCDIs: {err}")
                 return pb2.MinionUpdateCDIsResponse(err=err)
+
+            logging.info(f"UpdateCDIs: After update")
+            shm.print_stat()
 
             # update the recode in the DB
             cdi_minion_table.update_by_cdi_id()
@@ -105,9 +118,7 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
         logging.info(f"TransferAndDeleteCDIs: Processing request")
         cdi_minion_table_list = []
         for cdi_config in request.cdi_configs:
-            # convert the proto cdi config to CDI_Minion_Table model
-            cdi_minion_table = CDI_Minion_Table()
-            cdi_minion_table.load_proto_cdi_config(cdi_config)
+            cdi_minion_table = CDI_Minion_Table(cdi_id=cdi_config.cdi_id)
             logging.info(f"TransferAndDeleteCDIs: Fetching cdi record with key: {cdi_minion_table.cdi_id}")
             # check if the CDI is managed by the Minion
             result = cdi_minion_table.get_by_cdi_id()
@@ -116,6 +127,9 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
                 # if not, then return an error
                 err = f"Minion-TransferAndDeleteCDIs: Couldn't find CDI with id: {cdi_minion_table.cdi_id}"
                 return pb2.MinionTransferAndDeleteCDIsResponse(err=err)
+            # convert the proto cdi config to CDI_Minion_Table model
+            cdi_minion_table.load_proto_cdi_config(cdi_config)
+
             # if present, fetch the CID's payload
             shm = SharedMemory(size=cdi_minion_table.cdi_size_bytes, key=cdi_minion_table.cdi_key,
                                shm_mode=cdi_minion_table.cdi_access_mode, uid=cdi_minion_table.uid,
@@ -155,7 +169,6 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
                 err = f"Exception while deleting SharedMemory for App: {cdi_minion_table.app_id}, CDI: {cdi_minion_table.cdi_id}: {err}"
                 # Just log if we couldn't delete the shared memory - TODO: Should we handle this differently?
                 logging.error(f"TransferAndDeleteCDIs: {err}")
-            cdi_minion_table.delete_by_cdi_id()
             logging.info(f"TransferAndDeleteCDIs: Successfully deleted cdi record with key: {cdi_minion_table.cdi_id}")
         return pb2.MinionTransferAndDeleteCDIsResponse(err="")
 
@@ -163,9 +176,7 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
     def DeleteCDIs(self, request, context):
         logging.info(f"DeleteCDIs: Processing request")
         for cdi_config in request.cdi_configs:
-            # convert the proto cdi config to CDI_Minion_Table model
-            cdi_minion_table = CDI_Minion_Table()
-            cdi_minion_table.load_proto_cdi_config(cdi_config)
+            cdi_minion_table = CDI_Minion_Table(cdi_id=cdi_config.cdi_id)
             logging.info(f"DeleteCDIs: Fetching cdi record with key: {cdi_minion_table.cdi_id}")
             # check if the CDI is managed by the Minion
             result = cdi_minion_table.get_by_cdi_id()
@@ -174,6 +185,8 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
                 # if not, then return an error
                 err = f"Minion-DeleteCDIs: Couldn't find CDI with id: {cdi_minion_table.cdi_id}"
                 return pb2.MinionDeleteCDIsResponse(err=err)
+            # convert the proto cdi config to CDI_Minion_Table model
+            cdi_minion_table.load_proto_cdi_config(cdi_config)
             # if present, delete the CID
             shm = SharedMemory(size=cdi_minion_table.cdi_size_bytes, key=cdi_minion_table.cdi_key,
                                shm_mode=cdi_minion_table.cdi_access_mode, uid=cdi_minion_table.uid,
@@ -214,7 +227,8 @@ def _configure_maintenance_server(server: grpc.Server) -> None:
 
 def serve_rpc(rpc_host, rpc_port):
     logging.info(f"Starting RPC server on : {rpc_host}:{rpc_port}")
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=_THREAD_POOL_SIZE))
+    channel_opt = [('grpc.max_send_message_length', _GRPC_MSG_SIZE), ('grpc.max_receive_message_length', _GRPC_MSG_SIZE)]
+    server = grpc.server(thread_pool=futures.ThreadPoolExecutor(max_workers=_THREAD_POOL_SIZE), options=channel_opt)
 
     pb2_grpc.add_MinionControllerServiceServicer_to_server(MinionControllerService(), server)
     server.add_insecure_port(f"{rpc_host}:{rpc_port}")

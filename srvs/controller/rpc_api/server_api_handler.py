@@ -2,8 +2,8 @@ import logging
 
 import grpc
 
-import srvs.controller.rpc_api.controller_api_pb2_grpc as pb2_grpc
-import srvs.controller.rpc_api.controller_api_pb2 as pb2
+import srvs.common.rpc_api.controller_api_pb2_grpc as pb2_grpc
+import srvs.common.rpc_api.controller_api_pb2 as pb2
 
 from concurrent import futures
 from grpc_health.v1 import health
@@ -11,7 +11,8 @@ from grpc_health.v1 import health_pb2 as _health_pb2
 from grpc_health.v1 import health_pb2_grpc as _health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 
-from library.common.utils import get_kube_dns_url
+from library.common.constants import CACHE_DB_HOST_ENV, DEPLOY_PLATFORM_ENV
+from library.common.utils import get_kube_dns_url, getenv_with_default
 from srvs.controller.db.cdi_controller_table_ops import CDI_Controller_Table
 from srvs.controller.db.registered_minion_table_ops import Registered_Minion_Table
 from srvs.controller.db.registered_process_table_ops import Registered_Process_Table
@@ -20,6 +21,7 @@ from srvs.controller.rpc_api.process_client_api_handlers import ProcessClient
 
 _THREAD_POOL_SIZE = 256
 
+deploy_platform = getenv_with_default(DEPLOY_PLATFORM_ENV, "kubernetes")
 
 class ControllerService(pb2_grpc.ControllerServiceServicer):
     def __init__(self, *args, **kwargs):
@@ -127,7 +129,8 @@ class ControllerService(pb2_grpc.ControllerServiceServicer):
             cdi_controller_table_list.append(cdi_controller_table)
 
         # Create a client to interact with the minion and call the CreateCDIs api of the minion
-        minion_host = get_kube_dns_url(node_ip=minion_table.node_ip, pod_ip=minion_table.rpc_ip, pod_namespace=minion_table.namespace)
+        minion_host = get_kube_dns_url(node_ip=minion_table.node_ip, pod_ip=minion_table.rpc_ip,
+                                       pod_namespace=minion_table.namespace, deploy_platform=deploy_platform)
         minion_client = MinionClient(host=minion_host, port=minion_table.rpc_port)
         response = minion_client.CreateCDIs(cdi_controller_table_list)
         if response.err != "":
@@ -193,7 +196,7 @@ class ControllerService(pb2_grpc.ControllerServiceServicer):
 
         # Create a client to interact with the minion and call the CreateCDIs api of the minion
         current_minion_host = get_kube_dns_url(node_ip=current_minion_table.node_ip, pod_ip=current_minion_table.rpc_ip,
-                                               pod_namespace=current_minion_table.namespace)
+                                               pod_namespace=current_minion_table.namespace, deploy_platform=deploy_platform)
         current_minion_client = MinionClient(host=current_minion_host, port=current_minion_table.rpc_port)
 
         # Prepare the request body - list of CDI config which need to be created on the node
@@ -206,8 +209,9 @@ class ControllerService(pb2_grpc.ControllerServiceServicer):
             cdi_controller_table.process_name = next_process_table.name
             cdi_controller_table.uid = next_process_table.uid
             cdi_controller_table.gid = next_process_table.gid
-            cdi_controller_table.cdi_access_mode = request.transfer_mode
+            cdi_controller_table.cdi_access_mode = int(request.transfer_mode)
             cdi_controller_table_list.append(cdi_controller_table)
+            logging.error(f"TransferCDIs: Updated: process_id: {cdi_controller_table_list[0].process_id}, process_name: {cdi_controller_table_list[0].process_name}, uid: {cdi_controller_table_list[0].uid}, gid: {cdi_controller_table_list[0].gid}, cdi_access_mode: {cdi_controller_table_list[0].cdi_access_mode}")
 
         if current_process_table.node_ip == next_process_table.node_ip:
             logging.info(f"TransferCDIs: Current process {current_process_table.process_id} and next process {next_process_table.process_id} are on the same node.")
@@ -230,10 +234,10 @@ class ControllerService(pb2_grpc.ControllerServiceServicer):
                 err = f"Controller-TransferCDIs: Couldn't find next minion for node_ip: {next_minion_table.node_ip}"
                 return pb2.TransferCDIsResponse(err=err)
             next_minion_host = get_kube_dns_url(node_ip=next_minion_table.node_ip, pod_ip=next_minion_table.rpc_ip,
-                                                pod_namespace=next_minion_table.namespace)
+                                                pod_namespace=next_minion_table.namespace, deploy_platform=deploy_platform)
             response = current_minion_client.TransferAndDeleteCDIs(
                 transfer_host=next_minion_host,
-                transfer_port=next_minion_table.rpc_port,
+                transfer_port=str(next_minion_table.rpc_port),
                 cdi_controller_table_list=cdi_controller_table_list)
             if response.err != "":
                 logging.error(f"TransferCDIs: Exception while transferring CDIs from minion on node {current_process_table.node_ip} to minion on node {next_process_table.node_ip}: {response.err}")
@@ -241,16 +245,16 @@ class ControllerService(pb2_grpc.ControllerServiceServicer):
                 err = f"Controller-TransferCDIs: exception from minion while transferred CDIs: {response.err}"
                 return pb2.TransferCDIsResponse(err=err)
 
-            logging.info(f"TransferCDIs: Notifying next process {next_process_table.process_id} about CDI access.")
-            # Finally, notify the next process about the access transfer
-            #next_process_host = get_kube_dns_url(pod_ip=next_process_table.rpc_ip, pod_namespace=next_process_table.namespace)
-            next_process_client = ProcessClient(host=next_process_table.rpc_ip, port=next_process_table.rpc_port)
-            response = next_process_client.NotifyCDIsAccess(cdi_controller_table_list)
-            if response.err != "":
-                logging.error(f"TransferCDIs: Exception while notifying next process {next_process_table.process_id} about CDI access: {response.err}")
-                # CDIs access transfer was not notified to the next process
-                err = f"Controller-TransferCDIs: exception from next process {next_process_table.process_id} while notifying access: {response.err}"
-                return pb2.TransferCDIsResponse(err=err)
+        logging.info(f"TransferCDIs: Notifying next process {next_process_table.process_id} about CDI access.")
+        # Finally, notify the next process about the access transfer
+        #next_process_host = get_kube_dns_url(pod_ip=next_process_table.rpc_ip, pod_namespace=next_process_table.namespace)
+        next_process_client = ProcessClient(host=next_process_table.rpc_ip, port=next_process_table.rpc_port)
+        response = next_process_client.NotifyCDIsAccess(cdi_controller_table_list)
+        if response.err != "":
+            logging.error(f"TransferCDIs: Exception while notifying next process {next_process_table.process_id} about CDI access: {response.err}")
+            # CDIs access transfer was not notified to the next process
+            err = f"Controller-TransferCDIs: exception from next process {next_process_table.process_id} while notifying access: {response.err}"
+            return pb2.TransferCDIsResponse(err=err)
         for cdi_controller_table in cdi_controller_table_list:
             logging.info(f"TransferCDIs: Updating CDI record for the key {cdi_controller_table.cdi_key}")
             # update record in DB
@@ -289,7 +293,7 @@ class ControllerService(pb2_grpc.ControllerServiceServicer):
 
         # Create a client to interact with the minion and call the CreateCDIs api of the minion
         minion_host = get_kube_dns_url(node_ip=minion_table.node_ip, pod_ip=minion_table.rpc_ip,
-                                       pod_namespace=minion_table.namespace)
+                                       pod_namespace=minion_table.namespace, deploy_platform=deploy_platform)
         minion_client = MinionClient(host=minion_host, port=minion_table.rpc_port)
         response = minion_client.DeleteCDIs(cdi_controller_table_list)
         if response.err != "":

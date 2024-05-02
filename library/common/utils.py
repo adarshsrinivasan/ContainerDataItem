@@ -22,15 +22,18 @@ def generate_data_of_size_kb(date_size_kb: int) -> str:
 
 
 def encode_payload(decoded_payload):
-    return base64.b64encode(decoded_payload.encode("ascii")).decode("ascii")
+    # return base64.b64encode(decoded_payload.encode("ascii")).decode("ascii")
+    return decoded_payload
 
 
 def decode_payload(encoded_payload):
-    return base64.b64decode(encoded_payload).decode("ascii")
+    # return base64.b64decode(encoded_payload).decode("ascii")
+    return encoded_payload
 
-
-def get_kube_dns_url(node_ip, pod_ip, pod_namespace):
-    # return f"{pod_ip}.{pod_namespace}..pod.cluster.local"
+def get_kube_dns_url(node_ip="", pod_ip="", pod_namespace="", deploy_platform="kubernetes"):
+    if deploy_platform == "kubernetes":
+        # return f"{pod_ip}.{pod_namespace}.pod.cluster.local"
+        return pod_ip
     return node_ip
 
 
@@ -54,7 +57,7 @@ def unpack_data(packed_data):
     frame_order = int(info_split[2])
     x_shape = int(info_split[3])
     y_shape = int(info_split[4])
-    done = (info_split[5] == 'True')
+    done = info_split[5] == 'True'
     frame_data_type = info_split[6].strip()
     frame_shape_x = int(info_split[7])
     frame_shape_y = int(info_split[8])

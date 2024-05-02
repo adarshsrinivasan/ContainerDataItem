@@ -10,6 +10,10 @@ spec:
     - protocol: "TCP"
       port: 50000
       targetPort: 50000
-      name: extractor
+      name: extractor-rest
+    - protocol: "TCP"
+      port: 50011
+      targetPort: 50011
+      name: extractor-rpc
   selector:
     app: extractor

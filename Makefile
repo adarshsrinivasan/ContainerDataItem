@@ -5,31 +5,10 @@ build-proto:
 	python3 \
 	-m grpc_tools.protoc \
 	-I library/proto/ \
-	--python_out=srvs/controller/rpc_api/ \
-	--grpc_python_out=srvs/controller/rpc_api/ \
-	--python_out=srvs/minion/rpc_api/ \
-    --grpc_python_out=srvs/minion/rpc_api/ \
-	--python_out=srvs/extractor/rpc_api/ \
-    --grpc_python_out=srvs/extractor/rpc_api/ \
-    --python_out=library/common/ \
+    --python_out=srvs/common/rpc_api/ \
+    --grpc_python_out=srvs/common/rpc_api/ \
 	controller-api.proto \
-	&& \
-	python3 \
-	-m grpc_tools.protoc \
-	-I library/proto/ \
-	--python_out=srvs/minion/rpc_api/ \
-	--grpc_python_out=srvs/minion/rpc_api/ \
-	--python_out=srvs/controller/rpc_api/ \
-    --grpc_python_out=srvs/controller/rpc_api/ \
 	minion-api.proto \
-	&& \
-	python3 \
-	-m grpc_tools.protoc \
-	-I library/proto/ \
-	--python_out=srvs/controller/rpc_api/ \
-	--grpc_python_out=srvs/controller/rpc_api/ \
-	--python_out=srvs/extractor/rpc_api/ \
-	--grpc_python_out=srvs/extractor/rpc_api/ \
 	process-api.proto
 
 
@@ -104,15 +83,6 @@ build-combiner:
 	&& \
 	docker push ${IMAGE}
 
-
-
-
-
-run-controller: build-controller
-	docker compose -f deployment/docker/docker-compose.yaml up -d postgres pgbouncer
-	docker compose -f deployment/docker/docker-compose.yaml up controller
-
-run-minion: build-minion run-controller
-	docker compose -f deployment/docker/docker-compose.yaml up -d minion
+build-all: build-proto build-common build-controller build-minion build-extractor build-detector build-combiner
 
 

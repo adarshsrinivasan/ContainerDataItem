@@ -106,7 +106,7 @@ lib.Read.restype = None
 
 
 class SharedMemory:
-    def __init__(self, size=0, shm_id=-1, key=-1, shm_mode=666, uid=0, gid=0) -> None:
+    def __init__(self, size=0, shm_id=-1, key=-1, shm_mode=666, uid=0, gid=0, create_shm=False) -> None:
         self.size = size
         self.shm_id = shm_id
         self.key = key
@@ -114,10 +114,17 @@ class SharedMemory:
         self.uid = uid
         self.gid = gid
         self.at_ptr = None
+        self.create_shm = create_shm
 
     def __populate_shm_id_if_empty(self):
         if self.shm_id == -1:
-            self.shm_id = lib.Create(self.key, self.size, IPC_CREAT | self.shm_mode)
+            # logging.info(f"__populate_shm_id_if_empty: {self.key}-{type(self.key)} {self.size}-{type(self.size)} {self.shm_mode}-{type(self.shm_mode)}")
+            if self.create_shm:
+                logging.info(f"__populate_shm_id_if_empty: Creating new SHM for key: {self.key}")
+                self.shm_id = lib.Create(self.key, self.size, IPC_CREAT | self.shm_mode)
+            else:
+                logging.info(f"__populate_shm_id_if_empty: Attempting to attach to SHM with key: {self.key}")
+                self.shm_id = lib.Create(self.key, self.size, self.shm_mode)
         if self.shm_id < 0:
             err = f"Error: exception while create/access operation. shm_id: {self.shm_id}"
             logging.error(f"{err}\n")
@@ -236,12 +243,13 @@ class SharedMemory:
 
 def SHM_Test():
     data = "testdata1test"
-    myshm = SharedMemory(size=SHM_SIZE, key=SHM_KEY, shm_mode=644)
+    myshm = SharedMemory(size=SHM_SIZE, key=SHM_KEY, shm_mode=644, create_shm=True)
     try:
         myshm.create()
     except Exception as err:
         raise Exception(f"Create Error1: {err}")
 
+    myshm = SharedMemory(size=SHM_SIZE, key=SHM_KEY, shm_mode=644, create_shm=False)
     try:
         myshm.create()
     except Exception as err:

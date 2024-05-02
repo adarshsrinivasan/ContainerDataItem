@@ -2,7 +2,7 @@ import logging
 from typing import List
 from library.db.sql_db import execute_sql_command
 
-import srvs.controller.rpc_api.controller_api_pb2 as pb2
+import srvs.common.rpc_api.controller_api_pb2 as pb2
 
 TABLE_NAME = "cdi_controller_data"
 
@@ -24,8 +24,8 @@ def init_cdi_controller_table():
 
 
 class CDI_Controller_Table:
-    def __init__(self, cdi_id="", process_id="", process_name="", app_id="", app_name="", cdi_key="", cdi_size_bytes="",
-                 cdi_access_mode="", uid="", gid=""):
+    def __init__(self, cdi_id="", process_id="", process_name="", app_id="", app_name="", cdi_key=0, cdi_size_bytes=0,
+                 cdi_access_mode=0, uid=0, gid=0):
         self.id = -1
         self.cdi_id = cdi_id
         self.process_id = process_id
@@ -74,7 +74,7 @@ class CDI_Controller_Table:
 
     def update_by_cdi_id(self):
         execute_sql_command(
-            f"""UPDATE {TABLE_NAME} SET process_id = {self.process_id}, process_name = {self.process_name}, uid = {self.uid}, gid = {self.gid}, cdi_access_mode = {self.cdi_access_mode} WHERE cdi_id = '{self.cdi_id}';""")
+            f"""UPDATE {TABLE_NAME} SET process_id = '{self.process_id}', process_name = '{self.process_name}', uid = {self.uid}, gid = {self.gid}, cdi_access_mode = {self.cdi_access_mode} WHERE cdi_id = '{self.cdi_id}';""")
 
     def delete_by_cdi_id(self):
         execute_sql_command(f"""DELETE FROM {TABLE_NAME} WHERE cdi_id='{self.cdi_id}';""")
@@ -112,10 +112,10 @@ class CDI_Controller_Table:
         proto_cdi_config.process_name = self.process_name
         proto_cdi_config.app_id = self.app_id
         proto_cdi_config.app_name = self.app_name
-        proto_cdi_config.cdi_key = self.cdi_key
-        proto_cdi_config.cdi_size_bytes = self.cdi_size_bytes
-        proto_cdi_config.cdi_access_mode = self.cdi_access_mode
-        proto_cdi_config.uid = self.uid
-        proto_cdi_config.gid = self.gid
+        proto_cdi_config.cdi_key = int(self.cdi_key)
+        proto_cdi_config.cdi_size_bytes = int(self.cdi_size_bytes)
+        proto_cdi_config.cdi_access_mode = int(self.cdi_access_mode)
+        proto_cdi_config.uid = int(self.uid)
+        proto_cdi_config.gid = int(self.gid)
 
         return proto_cdi_config

@@ -12,19 +12,51 @@ spec:
       labels:
         app: extractor
     spec:
+      securityContext:
+        runAsUser: 997
+        runAsGroup: 23
+      hostIPC: True
       containers:
         - name: extractor
-          image: adarshzededa/cdi-extractor-rpc:latest
+          image: adarshzededa/cdi-extractor:latest
           imagePullPolicy: Always
           env:
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: CONTAINER_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: CONTAINER_IP
+              value: "extractor-service"
+            - name: CONTAINER_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: PROCESS_ID
+              value: "b8269e66-e6d4-4b66-8f1e-acd9715372c9"
+            - name: RPC_HOST
+              value: "0.0.0.0"
+            - name: RPC_PORT
+              value: "50011"
+            - name: CONTROLLER_HOST
+              value: "controller-service"
+            - name: CONTROLLER_PORT
+              value: "50000"
             - name: HOST
               value: "0.0.0.0"
             - name: PORT
               value: "50000"
-            - name: NEXT_RPC_HOST
-              value: "detector-service"
-            - name: NEXT_RPC_PORT
-              value: "50000"
+            - name: CONFIG_PATH
+              value: "/etc/config/process_config.yaml"
+            - name: CACHE_DB_HOST
+              value: "redis-service"
+            - name: CACHE_DB_PORT
+              value: "6379"
+            - name: CACHE_DB_PWD
+              value: "supersecurepassword"
             - name: LOCAL_BUFFER_DIR
               value: "/tmp"
           resources:
@@ -33,6 +65,7 @@ spec:
               memory: 400Mi
           ports:
             - containerPort: 50000
+            - containerPort: 50011
           readinessProbe:
             httpGet:
               path: /api/v1/health
@@ -45,3 +78,12 @@ spec:
               port: 50000
             initialDelaySeconds: 10
             periodSeconds: 60
+          volumeMounts:
+            - name: conf
+              mountPath: /etc/config/
+              readOnly: false
+      volumes:
+        - name: conf
+          configMap:
+            name: cdi-config
+            defaultMode: 0755

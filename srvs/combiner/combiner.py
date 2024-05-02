@@ -89,23 +89,24 @@ class Combiner(threading.Thread):
         self.sftp_pwd = sftp_pwd
 
         logging.info(f"combiner: Started Processing Payload: {stream_id}. Done Status: {done}")
-        if not self.done:
-            key = f"{stream_id}_{frame_order}"
+        if frame_order <= frame_count:
+            key = f"combiner_{stream_id}_{frame_order}"
             add_frame_obj_to_cache(key=key, frame_obj=self.pack_cache_data(frame=frame))
-            logging.info(f"combiner: Added frame {frame_order + 1} out of {frame_count} with key {key} to cache")
-            return
+            logging.info(f"combiner: Added frame {frame_order} out of {frame_count} with key {key} to cache")
+            return False
 
         if self.out is None:
             four_cc = cv2.VideoWriter_fourcc(*"MJPG")
             self.out = cv2.VideoWriter(self.local_out_file_path, four_cc, 20, (x_shape, y_shape))
 
         logging.info(f"combiner: Received all the frames for the stream {stream_id}. Attempting to compile all the frames.")
-        for i in range(0, frame_order):
-            key = f"{stream_id}_{i}"
+        for i in range(0, frame_count):
+            key = f"combiner_{stream_id}_{i+1}"
+            logging.info(f"combiner: fetching frame: {key}...")
             frame = self.unpack_cache_data(packed_cache_data=get_frame_obj_from_cache(key=key))
             self.out.write(frame)
             cv2.waitKey(1)
             delete_frame_obj_from_cache(key=key)
         self.out.release()
         logging.info(f"combiner: Compiled all the frames for {stream_id}")
-        return self.done
+        return True
