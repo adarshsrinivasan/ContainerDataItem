@@ -6,7 +6,7 @@ static struct ibv_recv_wr server_recv_wr, *bad_server_recv_wr = NULL;
 static struct ibv_sge client_send_sge, server_recv_sge;
 
 #define CLIENT_HELLO (123)
-int connect_server(struct sockaddr_in *s_addr, const char* str_to_send);
+int connect_server(struct sockaddr_in *s_addr, char* str_to_send);
 
 /*
  * Create client ID and resolve the destination IP address to RDMA Address
@@ -77,7 +77,8 @@ static int setup_client_resources(struct sockaddr_in *s_addr) {
 /*
  * Send HELLO message to server
  */
-static int send_hello_to_server() {
+static int post_send_hello() {
+    struct ibv_wc wc;
     debug("Register Client Buffer")
     client_buff.message = malloc(sizeof(struct msg));
     client_buff.message->type = HELLO;
@@ -105,15 +106,18 @@ static int send_hello_to_server() {
     HANDLE_NZ(ibv_post_send(client_res->qp,
                             &client_send_wr,
                             &bad_client_send_wr));
-
-    info("Pre-posting Send Request with OFFSET is successful \n");
+    int ret = process_work_completion_events(client_res->comp_channel, &wc, 1);
+    if (ret < 0) {
+        return ret;
+    }
+    info("Sent HELLO \n");
     return 0;
 }
 
 /*
  * Receive HELLO message from server
  */
-static int receive_hello_from_server() {
+static int post_recv_hello() {
     server_buff.message = malloc(sizeof(struct msg));
     HANDLE(server_buff.buffer = rdma_buffer_register(client_res->pd,
                                                      server_buff.message,
@@ -131,7 +135,7 @@ static int receive_hello_from_server() {
     HANDLE_NZ(ibv_post_recv(client_res->qp /* which QP */,
                             &server_recv_wr /* receive work request*/,
                             &bad_server_recv_wr /* error WRs */));
-    debug("Pre-posting Server Receive Buffer for Address successfull \n");
+    info("Pre-posting Receive HELLO \n");
     return 0;
 }
 
@@ -141,6 +145,7 @@ static int receive_hello_from_server() {
  * memory address, length and permissions.
  * */
 static void build_message_buffer(struct memory_region *region, const char* str_to_send) {
+
     region->memory_region = malloc(DATA_SIZE);
     strcpy(region->memory_region, str_to_send);
 
@@ -151,7 +156,7 @@ static void build_message_buffer(struct memory_region *region, const char* str_t
                                                          IBV_ACCESS_REMOTE_READ |
                                                          IBV_ACCESS_REMOTE_WRITE));
 
-    debug("Memory Region registration successful: %p\n", (unsigned long *) region->memory_region);
+    info("Memory Map built: ADDR: %p\n", (unsigned long *) region->memory_region);
 }
 
 /*
@@ -172,6 +177,7 @@ static int send_message_to_server(struct memory_region *region) {
                                                IBV_ACCESS_REMOTE_READ |
                                                IBV_ACCESS_REMOTE_WRITE));
 
+    info("Post Frame message \n")
     show_exchange_buffer(client_buff.message);
 
     client_send_sge.addr = (uint64_t) client_buff.message;
@@ -189,7 +195,7 @@ static int send_message_to_server(struct memory_region *region) {
     if (ret < 0) {
         return ret;
     }
-    info("POST MESSAGE TO SERVER \n");
+    info("POST MESSAGE TO SERVER \n\n");
     return 0;
 }
 
@@ -213,11 +219,51 @@ static int verify_offset_match() {
     return 0;
 }
 
+int check_if_data_is_present(struct memory_region* region) {
+    info("Check if data is present: %s\n", region->memory_region);
+    if (strcmp(region->memory_region, "helloworld123") == 0 && region->memory_region_mr->length == strlen("helloworld123"))
+        return 0;
+    return -1;
+}
+
+int post_recv_ack() {
+    struct ibv_wc wc;
+    server_buff.message = malloc(sizeof(struct msg));
+    HANDLE(server_buff.buffer = rdma_buffer_register(
+                                                     client_res->pd,
+                                                     server_buff.message,
+                                                     sizeof(struct msg),
+                                                     (IBV_ACCESS_LOCAL_WRITE)));
+    server_recv_sge.addr = (uint64_t) server_buff.message;
+    server_recv_sge.length = (uint32_t) sizeof(struct msg);
+    server_recv_sge.lkey = server_buff.buffer->lkey;
+
+    bzero(&server_recv_wr, sizeof(server_recv_wr));
+    server_recv_wr.sg_list = &server_recv_sge;
+    server_recv_wr.num_sge = 1;
+
+    HANDLE_NZ(ibv_post_recv(client_res->qp /* which QP */,
+                            &server_recv_wr /* receive work request*/,
+                            &bad_server_recv_wr /* error WRs */));
+
+    info("Pre-posting Receive ACK \n");
+    return 0;
+}
+
+int verify_ack() {
+    info("Verifying ACK\n");
+    if (server_buff.message->type == HELLO && server_buff.message->data.offset == 1) {
+        info("Server received the message. \n")
+        return 0;
+    }
+    return -1;
+}
+
 /*
  * Blocking while loop which checks for incoming events and calls the necessary
  * functions based on the received events
  */
-static int wait_for_event(struct sockaddr_in *s_addr, const char* str_to_send) {
+static int wait_for_event(struct sockaddr_in *s_addr, char* str_to_send) {
 
     struct rdma_cm_event *received_event = NULL;
     struct memory_region *frame = NULL;
@@ -235,67 +281,67 @@ static int wait_for_event(struct sockaddr_in *s_addr, const char* str_to_send) {
                 rdma_resolve_route(client_res->id, TIMEOUTMS);
                 break;
 
-                /* RDMA Route established successfully */
+            /* RDMA Route established successfully */
             case RDMA_CM_EVENT_ROUTE_RESOLVED:
                 frame = (struct memory_region *) malloc(sizeof(struct memory_region *));
                 setup_client_resources(s_addr);
-                receive_hello_from_server();
+                post_recv_hello();
+
                 build_message_buffer(frame, str_to_send);
                 connect_to_server();
                 break;
 
             case RDMA_CM_EVENT_ESTABLISHED:
-                send_hello_to_server();
-                process_work_completion_events(client_res->comp_channel, &wc, 2);
-                int ret = verify_offset_match();
-                if (ret == -1) {
-                    rdma_disconnect(client_res->id);
-                    return 0;
-                }
-                int count = 0;
-                while(count < 5) {
-                    int ret = send_message_to_server(frame);
-                    if (ret) {
-                        info("Send lost. Retry");
-                        count += 1;
-                        continue;
-                    }
-                    break;
-                }
-                rdma_disconnect(client_res->id);
-                break;
+                post_send_hello();
+                // wait for receiving the Hello
+                process_work_completion_events(client_res->comp_channel, &wc, 1);
 
-            case RDMA_CM_EVENT_DISCONNECTED:
-                info("%s event received \n", rdma_event_str(cm_event.event));
+                post_recv_ack();
+                int ret = send_message_to_server(frame);
+                if (ret < 0) {
+                    error("Unable to send message to server \n");
+                }
+
+                // wait for receiving the ACK
+                process_work_completion_events(client_res->comp_channel, &wc, 1);
+                show_exchange_buffer(server_buff.message);
+                info("Received ACK \n");
+                rdma_disconnect(client_res->id);
                 disconnect_client(client_res, cm_event_channel, frame, &server_buff, &client_buff);
                 return 0;
+
             default:
-                error("Event not found %s", (char *) cm_event.event);
-                break;
+                error("Event not found %s \n", rdma_event_str(cm_event.event));
+                return -1;
         }
     }
 }
 
 
-int connect_server(struct sockaddr_in *s_addr, const char* str_to_send) {
+int connect_server(struct sockaddr_in *s_addr, char* str_to_send) {
     wait_for_event(s_addr, str_to_send);
 }
 
 
-//int main(int argc, char **argv) {
-//    struct sockaddr_in server_sockaddr;
-//    int ret;
-//
-//    bzero(&server_sockaddr, sizeof server_sockaddr);
-//    server_sockaddr.sin_family = AF_INET;
-//    server_sockaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-//
-//    ret = get_addr("10.10.1.2", (struct sockaddr *) &server_sockaddr);
-//    if (ret) {
-//        error("Invalid dst addr");
-//        return ret;
-//    }
-//    server_sockaddr.sin_port = htons(1234);
-//    connect_server(&server_sockaddr, "teststring");
-//    return ret;
-//}
+int main(int argc, char **argv) {
+    struct sockaddr_in server_sockaddr;
+    int ret;
+
+    bzero(&server_sockaddr, sizeof server_sockaddr);
+    server_sockaddr.sin_family = AF_INET;
+    server_sockaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+    ret = get_addr("10.10.1.1", (struct sockaddr *) &server_sockaddr);
+    if (ret) {
+        error("Invalid dst addr");
+        return ret;
+    }
+    server_sockaddr.sin_port = htons(12345);
+    char buf[15];
+    for ( int i = 0; i < 10; i++) {
+        snprintf(buf, 15, "hello_world_%d", i);
+        connect_server(&server_sockaddr, buf);
+        //sleep(2);
+    }
+    return ret;
+}

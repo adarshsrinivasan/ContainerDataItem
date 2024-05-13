@@ -1,13 +1,13 @@
 import ctypes
 import socket
-import sys
+import string
+import random
 
 UNIX_PATH_MAX = 108
 PF_UNIX = socket.AF_UNIX
 PF_INET = socket.AF_INET
 
-server_libc = ctypes.CDLL('libs/librdma_server_lib.so')
-client_libc = ctypes.CDLL('libs/librdma_client_lib.so')
+DATA_SIZE = 1024
 
 
 def SUN_LEN(path):
@@ -27,9 +27,9 @@ class sockaddr_in(ctypes.Structure):
                 ("__pad", ctypes.c_byte * 8)]
 
 
-server_libc.start_rdma_server.argtypes = [ctypes.POINTER(sockaddr_in)]
-server_libc.start_rdma_server.restype = ctypes.c_char_p
-client_libc.connect_server.argtypes = [ctypes.POINTER(sockaddr_in), ctypes.c_char_p]
+def generate_big_data():
+    alphanumeric_chars = string.ascii_letters + string.digits
+    return ''.join(random.choice(alphanumeric_chars) for _ in range(DATA_SIZE))
 
 
 def to_sockaddr(family, address, port):
@@ -46,13 +46,3 @@ def to_sockaddr(family, address, port):
         raise NotImplementedError('Not implemented family %s' % (family,))
 
     return addr
-
-
-def server_listen(sockaddr):
-    received_frame = server_libc.start_rdma_server(sockaddr)
-    print("Received frame: ", received_frame.decode())
-
-
-def start_client(sockaddr, str_to_send):
-    buf = ctypes.create_string_buffer(str_to_send.encode(), len(str_to_send))
-    client_libc.connect_server(sockaddr, buf)

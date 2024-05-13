@@ -1,5 +1,6 @@
 #include "utils.h"
 
+#include <poll.h>
 
 void show_memory_map(const char* memory_region) {
     info("-------------------\n")
@@ -57,11 +58,28 @@ struct ibv_mr *rdma_buffer_register(struct ibv_pd *pd,
         error("Failed to create mr on buffer, errno: %d \n", -errno);
         return NULL;
     }
-    debug("Registered: %p , len: %u , stag: 0x%x \n",
+    info("Registered: %p , len: %u , stag: 0x%x \n",
          mr->addr,
          (unsigned int) mr->length,
          mr->lkey);
     return mr;
+}
+
+struct ibv_mr *rdma_buffer_re_register(struct ibv_mr *buffer, int flags, struct ibv_pd *pd,
+                                    void *addr, uint32_t length,
+                                    enum ibv_access_flags permission)
+{
+    struct ibv_mr *mr = NULL;
+    if (!pd) {
+        error("Protection domain is NULL, ignoring \n");
+        return NULL;
+    }
+    ibv_rereg_mr(buffer, flags, pd, addr, length, permission);
+    debug("Registered: %p , len: %u , stag: 0x%x \n",
+          mr->addr,
+          (unsigned int) mr->length,
+          mr->lkey);
+    return buffer;
 }
 
 void rdma_buffer_free(struct ibv_mr *mr)
@@ -95,6 +113,27 @@ int process_work_completion_events(struct ibv_comp_channel *comp_channel, struct
     void *context = NULL;
     struct ibv_cq *cq_ptr = NULL;
 
+    struct pollfd my_pollfd;
+    int ms_timeout = 1000;
+
+    my_pollfd.fd      = comp_channel->fd;
+    my_pollfd.events  = POLLIN;
+    my_pollfd.revents = 0;
+    int rc;
+    int MAX_TIMEOUT = 10000;
+    int cnt = 0;
+    do {
+        rc = poll(&my_pollfd, 1, ms_timeout);
+        if (rc == 0) {
+            info("Timeout for poll \n");
+        }
+        cnt += 1;
+    } while (rc == 0 && MAX_TIMEOUT != cnt * ms_timeout);
+    if (rc < 0) {
+        fprintf(stderr, "poll failed\n");
+        return -1;
+    }
+
     ret = ibv_get_cq_event(comp_channel, /* IO channel where we are expecting the notification */
                            &cq_ptr, /* which CQ has an activity. This should be the same as CQ we created before */
                            &context); /* Associated CQ user context, which we did set */
@@ -102,6 +141,7 @@ int process_work_completion_events(struct ibv_comp_channel *comp_channel, struct
         error("Failed to get next CQ event due to %d \n", -errno);
         return -errno;
     }
+    ibv_ack_cq_events(cq_ptr, 1);
     ret = ibv_req_notify_cq(cq_ptr, 0);
     if (ret) {
         error("Failed to request further notifications %d \n", -errno);
@@ -127,56 +167,46 @@ int process_work_completion_events(struct ibv_comp_channel *comp_channel, struct
         }
     }
     ibv_ack_cq_events(cq_ptr, 1);
+
     return total_wc;
 }
 
 int disconnect_client(struct client_resources* client_res, struct rdma_event_channel *cm_event_channel, struct memory_region* region, struct exchange_buffer *server_buff, struct exchange_buffer *client_buff)
 {
     int ret = -1;
-    /* Destroy QP */
-    ibv_destroy_qp(client_res->qp);
 
     /* Destroy client cm id */
     ret = rdma_destroy_id(client_res->id);
     if (ret) {
         error("Failed to destroy client id cleanly, %d \n", -errno);
     }
-    /* Destroy CQ */
-    ret = ibv_destroy_cq(client_res->cq);
-    if (ret) {
-        error("Failed to destroy completion queue cleanly, %d \n", -errno);
-    }
-//    /* Destroy completion channel */
-//    ret = ibv_destroy_comp_channel(client_res->comp_channel);
-//    if (ret) {
-//        error("Failed to destroy completion channel cleanly, %d \n", -errno);
-//    }
 
     rdma_buffer_deregister(region->memory_region_mr);
     rdma_buffer_deregister(client_buff->buffer);
     rdma_buffer_deregister(server_buff->buffer);
 
-    rdma_destroy_event_channel(cm_event_channel);
+    //rdma_destroy_event_channel(cm_event_channel);
     printf("Client resource clean up is complete \n");
     return 0;
 }
 
-int disconnect_server(struct client_resources* client_res, struct rdma_event_channel *cm_event_channel, struct rdma_cm_id *cm_server_id)
+int disconnect_server(struct client_resources* client_res, struct memory_region *frame, struct rdma_event_channel *cm_event_channel, struct rdma_cm_id *cm_server_id)
 {
     int ret = -1;
 
-    /* Destroy QP */
-    rdma_destroy_qp(client_res->id);
-
-    /* Destroy rdma server id */
-    ret = rdma_destroy_id(cm_server_id);
-    if (ret) {
-        error("Failed to destroy server id cleanly, %d \n", -errno);
-    }
-
-    rdma_destroy_event_channel(cm_event_channel);
+//    /* Destroy QP */
+//    rdma_destroy_qp(client_res->id);
+//
+//    /* Destroy rdma server id */
+//    ret = rdma_destroy_id(cm_server_id);
+//    if (ret) {
+//        error("Failed to destroy server id cleanly, %d \n", -errno);
+//    }
+//
+//    rdma_destroy_event_channel(cm_event_channel);
 
     free(client_res);
+
     printf("Server shut-down is complete \n");
     return 0;
 }

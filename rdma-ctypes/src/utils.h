@@ -16,6 +16,8 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <time.h>
+#include <sys/time.h>
+
 
 #include <rdma/rdma_cma.h>
 #include <infiniband/verbs.h>
@@ -24,7 +26,7 @@
 #define DEFAULT_RDMA_PORT (12345)
 #define MAX_CONNECTION (5)
 #define ENABLE_ERROR
-#define ENABLE_DEBUG
+//#define ENABLE_DEBUG
 
 #define CQ_CAPACITY (16)
 #define MAX_SGE (2)
@@ -51,9 +53,14 @@
 #define debug(msg, args...)
 #endif
 
-#define info(msg, args...) do {\
-    fprintf(stdout, "log: "msg, ## args);\
-}while(0);
+#define info(msg, args...) do { \
+    struct timeval tv; \
+    gettimeofday(&tv, NULL); \
+    struct tm *tm_info = localtime(&tv.tv_sec); \
+    char buffer[40]; \
+    strftime(buffer, 40, "%Y-%m-%d %H:%M:%S", tm_info); \
+    fprintf(stdout, "log: %s.%03ld " msg, buffer, tv.tv_usec / 1000, ##args); \
+} while (0);
 
 #define DATA_SIZE (1024 * 1024 * 10)
 
@@ -62,13 +69,16 @@ int get_addr(char *dst, struct sockaddr *addr);
 void show_memory_map(const char* memory_region);
 void show_exchange_buffer(struct msg *attr);
 
-int disconnect_server(struct client_resources* client_res, struct rdma_event_channel *cm_event_channel, struct rdma_cm_id *cm_server_id);
+int disconnect_server(struct client_resources* client_res, struct memory_region *frame, struct rdma_event_channel *cm_event_channel, struct rdma_cm_id *cm_server_id);
 int disconnect_client(struct client_resources* client_res, struct rdma_event_channel *cm_event_channel, struct memory_region* region, struct exchange_buffer *server_buff, struct exchange_buffer *client_buff);
 
 struct ibv_mr *rdma_buffer_register(struct ibv_pd *pd,
                                     void *addr,
                                     uint32_t length,
                                     enum ibv_access_flags permission);
+struct ibv_mr *rdma_buffer_re_register(struct ibv_mr *buffer, int flags, struct ibv_pd *pd,
+                                       void *addr, uint32_t length,
+                                       enum ibv_access_flags permission);
 void rdma_buffer_deregister(struct ibv_mr *mr);
 void rdma_buffer_free(struct ibv_mr *mr);
 struct ibv_mr* rdma_buffer_alloc(struct ibv_pd *pd, uint32_t size,
