@@ -3,24 +3,24 @@
 #include <poll.h>
 
 void show_memory_map(const char* memory_region) {
-    info("-------------------\n")
-    info("Memory Map: %s \n", memory_region);
-    info("-------------------\n");
+    debug("-------------------\n")
+    debug("Memory Map: %s \n", memory_region);
+    debug("-------------------\n");
 }
 
 void show_exchange_buffer(struct msg *attr) {
-    info("---------------------------------------------------------\n");
-    info("------------EXCHANGE BUFFER------------\n");
-    info("---------------------------------------------------------\n");
-    info("message %p\n", attr);
-    info("message, type: %d\n", attr->type);
+    debug("---------------------------------------------------------\n");
+    debug("------------EXCHANGE BUFFER------------\n");
+    debug("---------------------------------------------------------\n");
+    debug("message %p\n", attr);
+    debug("message, type: %d\n", attr->type);
     if(attr->type == HELLO) {
-        info("message: hello: %lu \n", attr->data.offset);
+        debug("message: hello: %lu \n", attr->data.offset);
     }
     if (attr->type == FRAME){
-        info("message: data.mr.address: %p \n", attr->data.mr.addr);
+        debug("message: data.mr.address: %p \n", attr->data.mr.addr);
     }
-    info("---------------------------------------------------------\n");
+    debug("---------------------------------------------------------\n");
 }
 
 struct ibv_mr* rdma_buffer_alloc(struct ibv_pd *pd, uint32_t size,
@@ -58,7 +58,7 @@ struct ibv_mr *rdma_buffer_register(struct ibv_pd *pd,
         error("Failed to create mr on buffer, errno: %d \n", -errno);
         return NULL;
     }
-    info("Registered: %p , len: %u , stag: 0x%x \n",
+    debug("Registered: %p , len: %u , stag: 0x%x \n",
          mr->addr,
          (unsigned int) mr->length,
          mr->lkey);
@@ -125,7 +125,7 @@ int process_work_completion_events(struct ibv_comp_channel *comp_channel, struct
     do {
         rc = poll(&my_pollfd, 1, ms_timeout);
         if (rc == 0) {
-            info("Timeout for poll \n");
+            debug("Timeout for poll \n");
         }
         cnt += 1;
     } while (rc == 0 && MAX_TIMEOUT != cnt * ms_timeout);
@@ -184,9 +184,10 @@ int disconnect_client(struct client_resources* client_res, struct rdma_event_cha
     rdma_buffer_deregister(region->memory_region_mr);
     rdma_buffer_deregister(client_buff->buffer);
     rdma_buffer_deregister(server_buff->buffer);
+//    free(client_res);
 
-    //rdma_destroy_event_channel(cm_event_channel);
-    printf("Client resource clean up is complete \n");
+    rdma_destroy_event_channel(cm_event_channel);
+    debug("Client resource clean up is complete \n");
     return 0;
 }
 
@@ -194,20 +195,18 @@ int disconnect_server(struct client_resources* client_res, struct memory_region 
 {
     int ret = -1;
 
-//    /* Destroy QP */
-//    rdma_destroy_qp(client_res->id);
-//
+    /* Destroy QP */
+    rdma_destroy_qp(client_res->id);
+
 //    /* Destroy rdma server id */
 //    ret = rdma_destroy_id(cm_server_id);
 //    if (ret) {
 //        error("Failed to destroy server id cleanly, %d \n", -errno);
 //    }
-//
 //    rdma_destroy_event_channel(cm_event_channel);
+//    free(client_res);
 
-    free(client_res);
-
-    printf("Server shut-down is complete \n");
+    debug("Server shut-down is complete \n");
     return 0;
 }
 

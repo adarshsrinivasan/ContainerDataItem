@@ -4,9 +4,19 @@
 static struct ibv_send_wr client_send_wr, *bad_client_send_wr = NULL;
 static struct ibv_recv_wr server_recv_wr, *bad_server_recv_wr = NULL;
 static struct ibv_sge client_send_sge, server_recv_sge;
+static struct exchange_buffer server_buff, client_buff;
+static struct rdma_cm_id *cm_client_id = NULL;
+static struct client_resources *client_res = NULL;
+static struct rdma_event_channel *cm_event_channel = NULL;
+static struct ibv_qp_init_attr qp_init_attr; // client queue pair attributes
+
 
 #define CLIENT_HELLO (123)
-int connect_server(struct sockaddr_in *s_addr, char* str_to_send);
+
+struct client_buffer_args {
+    struct sockaddr_in* s_addr;
+    char *frame;
+};
 
 /*
  * Create client ID and resolve the destination IP address to RDMA Address
@@ -79,7 +89,6 @@ static int setup_client_resources(struct sockaddr_in *s_addr) {
  */
 static int post_send_hello() {
     struct ibv_wc wc;
-    debug("Register Client Buffer")
     client_buff.message = malloc(sizeof(struct msg));
     client_buff.message->type = HELLO;
     client_buff.message->data.offset = CLIENT_HELLO;
@@ -110,7 +119,7 @@ static int post_send_hello() {
     if (ret < 0) {
         return ret;
     }
-    info("Sent HELLO \n");
+    info("Sending HELLO \n");
     return 0;
 }
 
@@ -177,7 +186,7 @@ static int send_message_to_server(struct memory_region *region) {
                                                IBV_ACCESS_REMOTE_READ |
                                                IBV_ACCESS_REMOTE_WRITE));
 
-    info("Post Frame message \n")
+    debug("Post Frame message \n")
     show_exchange_buffer(client_buff.message);
 
     client_send_sge.addr = (uint64_t) client_buff.message;
@@ -209,23 +218,6 @@ static void connect_to_server() {
     HANDLE_NZ(rdma_connect(client_res->id, &conn_param));
 }
 
-static int verify_offset_match() {
-    if (server_buff.message->type == HELLO && server_buff.message->data.offset == CLIENT_HELLO + 1) {
-        info("Offset matches with server \n");
-    } else {
-        error("Offset mismatch: HELLO communication failed \n");
-        return -1;
-    }
-    return 0;
-}
-
-int check_if_data_is_present(struct memory_region* region) {
-    info("Check if data is present: %s\n", region->memory_region);
-    if (strcmp(region->memory_region, "helloworld123") == 0 && region->memory_region_mr->length == strlen("helloworld123"))
-        return 0;
-    return -1;
-}
-
 int post_recv_ack() {
     struct ibv_wc wc;
     server_buff.message = malloc(sizeof(struct msg));
@@ -250,15 +242,6 @@ int post_recv_ack() {
     return 0;
 }
 
-int verify_ack() {
-    info("Verifying ACK\n");
-    if (server_buff.message->type == HELLO && server_buff.message->data.offset == 1) {
-        info("Server received the message. \n")
-        return 0;
-    }
-    return -1;
-}
-
 /*
  * Blocking while loop which checks for incoming events and calls the necessary
  * functions based on the received events
@@ -273,7 +256,7 @@ static int wait_for_event(struct sockaddr_in *s_addr, char* str_to_send) {
         struct ibv_wc wc;
         struct rdma_cm_event cm_event;
         memcpy(&cm_event, received_event, sizeof(*received_event));
-        info("%s event received \n", rdma_event_str(cm_event.event));
+        debug("%s event received \n", rdma_event_str(cm_event.event));
         HANDLE_NZ(rdma_ack_cm_event(received_event));
         switch (cm_event.event) {
             /* RDMA Address Resolution completed successfully */
@@ -305,9 +288,10 @@ static int wait_for_event(struct sockaddr_in *s_addr, char* str_to_send) {
                 // wait for receiving the ACK
                 process_work_completion_events(client_res->comp_channel, &wc, 1);
                 show_exchange_buffer(server_buff.message);
-                info("Received ACK \n");
+                debug("Received ACK \n");
                 rdma_disconnect(client_res->id);
                 disconnect_client(client_res, cm_event_channel, frame, &server_buff, &client_buff);
+                cm_client_id = NULL;
                 return 0;
 
             default:
@@ -315,33 +299,40 @@ static int wait_for_event(struct sockaddr_in *s_addr, char* str_to_send) {
                 return -1;
         }
     }
+    return 0;
 }
 
-
-int connect_server(struct sockaddr_in *s_addr, char* str_to_send) {
-    wait_for_event(s_addr, str_to_send);
+void start_client(struct sockaddr_in* s_addr, char* frame) {
+    info("Connecting to Server at: %s , port: %d \n",
+         inet_ntoa(s_addr->sin_addr),
+         ntohs(s_addr->sin_port));
+    wait_for_event(s_addr, frame);
 }
 
-
-int main(int argc, char **argv) {
-    struct sockaddr_in server_sockaddr;
-    int ret;
-
-    bzero(&server_sockaddr, sizeof server_sockaddr);
-    server_sockaddr.sin_family = AF_INET;
-    server_sockaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-
-    ret = get_addr("10.10.1.1", (struct sockaddr *) &server_sockaddr);
-    if (ret) {
-        error("Invalid dst addr");
-        return ret;
-    }
-    server_sockaddr.sin_port = htons(12345);
-    char buf[15];
-    for ( int i = 0; i < 10; i++) {
-        snprintf(buf, 15, "hello_world_%d", i);
-        connect_server(&server_sockaddr, buf);
-        //sleep(2);
-    }
-    return ret;
-}
+//int main(int argc, char **argv) {
+//    struct sockaddr_in server_sockaddr;
+//    int ret;
+//
+//    bzero(&server_sockaddr, sizeof server_sockaddr);
+//    server_sockaddr.sin_family = AF_INET;
+//    server_sockaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+//
+//    ret = get_addr("10.10.1.1", (struct sockaddr *) &server_sockaddr);
+//    if (ret) {
+//        error("Invalid dst addr");
+//        return ret;
+//    }
+//    server_sockaddr.sin_port = htons(12345);
+//    start
+////    pthread_t thread_id[25];
+////    for ( int i = 0; i < 5; i++) {
+////        args.s_addr = &server_sockaddr;
+////        snprintf(buf, 15, "hello_world_%d", i);
+////        args.frame = buf;
+////        int ret = pthread_create(&thread_id[i], NULL, (void*) start_client, (void *) &args);
+////        if (ret != 0) { info("Error from pthread: %d\n", ret); exit(1); }
+////        pthread_join(thread_id[i], 0);
+//////        sleep(2);
+////    }
+//    return 0;
+//}

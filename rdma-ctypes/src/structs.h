@@ -20,16 +20,16 @@
 #include <rdma/rdma_cma.h>
 #include <infiniband/verbs.h>
 
-static struct rdma_cm_id *cm_server_id = NULL;
-static struct rdma_cm_id *cm_client_id = NULL;
-static struct exchange_buffer server_buff, client_buff;
-static struct client_resources *client_res = NULL;
-static struct rdma_event_channel *cm_event_channel = NULL;
-static struct ibv_qp_init_attr qp_init_attr; // client queue pair attributes
-
 struct exchange_buffer {
     struct msg* message;
     struct ibv_mr* buffer;
+};
+
+struct thread_arguments {
+    struct client_resources* client_resources;
+    struct exchange_buffer server_buffer;
+    struct exchange_buffer client_buffer;
+    struct memory_region *frame;
 };
 
 struct msg {

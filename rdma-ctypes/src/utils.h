@@ -24,7 +24,7 @@
 #include "structs.h"
 
 #define DEFAULT_RDMA_PORT (12345)
-#define MAX_CONNECTION (5)
+#define MAX_CONNECTION (7)
 #define ENABLE_ERROR
 //#define ENABLE_DEBUG
 
