@@ -278,6 +278,7 @@ void* wait_for_event(void *args) {
                     pthread_exit(NULL);
                 }
                 received_frame = frame->memory_region;
+                info("Received frame of size: %ld \n", strlen(received_frame));
                 post_send_ACK(_client_struct, server_buffer);
                 break;
 
@@ -305,11 +306,11 @@ static void send_msg_to_queue(int msq_id, char* frame, struct frame_msg* sbuf) {
     sbuf->ftype = 1;
 
     if (msgsnd(msq_id, sbuf, buf_length, IPC_NOWAIT) < 0) {
-        error ("%d, %s, %ld\n", msq_id, sbuf->ftext, buf_length);
+        error ("%d, %ld failed to send. Check the resource limit\n", msq_id, buf_length);
         exit(1);
     }
     else
-        info("Message: %d %ld %s %ld sent \n", msq_id, sbuf->ftype, sbuf->ftext, buf_length);
+        info("Message of size %ld sent in msq_id: %d \n", buf_length, msq_id);
 }
 
 const char* start_rdma_server(struct sockaddr_in *server_sockaddr, int msq_id) {

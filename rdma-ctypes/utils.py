@@ -7,7 +7,7 @@ UNIX_PATH_MAX = 108
 PF_UNIX = socket.AF_UNIX
 PF_INET = socket.AF_INET
 
-DATA_SIZE = 1024
+DATA_SIZE = 1024 * 1024
 
 
 def SUN_LEN(path):
@@ -29,7 +29,7 @@ class sockaddr_in(ctypes.Structure):
 
 def generate_big_data():
     alphanumeric_chars = string.ascii_letters + string.digits
-    return ''.join(random.choice(alphanumeric_chars) for _ in range(1023))
+    return ''.join(random.choice(alphanumeric_chars) for _ in range(DATA_SIZE - 1))
 
 
 def to_sockaddr(family, address, port):

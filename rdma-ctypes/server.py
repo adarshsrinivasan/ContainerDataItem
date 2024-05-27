@@ -2,11 +2,9 @@ import ctypes
 import socket
 import sys
 import os
-from utils import sockaddr_in, PF_INET, to_sockaddr
+from utils import sockaddr_in, PF_INET, to_sockaddr, DATA_SIZE
 import threading
 from msg_queue import IPCMsgQueue
-
-DATA_SIZE = 1024 * 1024 * 10
 
 server_libc = ctypes.CDLL('libs/librdma_server_lib.so')
 
@@ -15,7 +13,7 @@ server_libc.start_rdma_server.restype = ctypes.c_char_p
 
 
 def handle_frame(frame):
-    print(f"Handle frame called with frame - {frame}! ")
+    print(f"Handle frame called with frame of size: ", len(frame))
 
 
 def start_server(sockaddr, msg_queue):

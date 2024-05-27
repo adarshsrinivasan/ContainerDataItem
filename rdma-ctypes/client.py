@@ -1,6 +1,8 @@
 import ctypes
 import socket
 import sys
+import time
+
 from utils import sockaddr_in, generate_big_data, to_sockaddr, PF_INET
 
 client_libc = ctypes.CDLL('libs/librdma_client_lib.so')
@@ -10,12 +12,10 @@ client_libc.start_client.restype = ctypes.c_int
 
 
 def start_client(sockaddr, str_to_send):
-    print(f"Sending frame: {str_to_send}")
-    print(str_to_send.encode('utf-16'))
-    buf = ctypes.create_string_buffer(str_to_send.encode('utf-8'), len(str_to_send))
+    print("sending string of size: ", len(str_to_send))
+    buf = ctypes.create_string_buffer(str_to_send.encode(), len(str_to_send))
     if client_libc.start_client(sockaddr, buf) == 0:
         return True
-
 
 # python client.py -c 10.10.1.1 -p 12345
 if __name__ == '__main__':
@@ -30,8 +30,11 @@ if __name__ == '__main__':
     else:
         port = 12345
     sockaddr = to_sockaddr(af, bind_addr, port)
-    for x in range(1, 2):
+    list_of_big_data = []
+    for x in range(0, 5):
+        data = generate_big_data()
+        list_of_big_data.append(data)
+    for x in range(0, 5):
         print(f"Sending {x}")
-        str_to_send = generate_big_data()
-        start_client(sockaddr, str_to_send)
+        start_client(sockaddr, list_of_big_data[x])
     print("Done")
