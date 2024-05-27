@@ -29,7 +29,7 @@ if __name__ == '__main__':
     else:
         port = 12345
     sockaddr = to_sockaddr(af, bind_addr, port)
-    for x in range(1, 200):
+    for x in range(1, 5):
         print(f"Sending {x}")
         str_to_send = generate_big_data()
         start_client(sockaddr, str_to_send)

@@ -29,7 +29,7 @@ class sockaddr_in(ctypes.Structure):
 
 def generate_big_data():
     alphanumeric_chars = string.ascii_letters + string.digits
-    return ''.join(random.choice(alphanumeric_chars) for _ in range(DATA_SIZE))
+    return ''.join(random.choice(alphanumeric_chars) for _ in range(1023))
 
 
 def to_sockaddr(family, address, port):

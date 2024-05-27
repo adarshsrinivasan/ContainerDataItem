@@ -309,30 +309,30 @@ void start_client(struct sockaddr_in* s_addr, char* frame) {
     wait_for_event(s_addr, frame);
 }
 
-//int main(int argc, char **argv) {
-//    struct sockaddr_in server_sockaddr;
-//    int ret;
-//
-//    bzero(&server_sockaddr, sizeof server_sockaddr);
-//    server_sockaddr.sin_family = AF_INET;
-//    server_sockaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-//
-//    ret = get_addr("10.10.1.1", (struct sockaddr *) &server_sockaddr);
-//    if (ret) {
-//        error("Invalid dst addr");
-//        return ret;
+int main(int argc, char **argv) {
+    struct sockaddr_in server_sockaddr;
+    int ret;
+
+    bzero(&server_sockaddr, sizeof server_sockaddr);
+    server_sockaddr.sin_family = AF_INET;
+    server_sockaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+    ret = get_addr("10.10.1.1", (struct sockaddr *) &server_sockaddr);
+    if (ret) {
+        error("Invalid dst addr");
+        return ret;
+    }
+    server_sockaddr.sin_port = htons(12345);
+    start_client(&server_sockaddr, "hello world");
+//    pthread_t thread_id[25];
+//    for ( int i = 0; i < 5; i++) {
+//        args.s_addr = &server_sockaddr;
+//        snprintf(buf, 15, "hello_world_%d", i);
+//        args.frame = buf;
+//        int ret = pthread_create(&thread_id[i], NULL, (void*) start_client, (void *) &args);
+//        if (ret != 0) { info("Error from pthread: %d\n", ret); exit(1); }
+//        pthread_join(thread_id[i], 0);
+////        sleep(2);
 //    }
-//    server_sockaddr.sin_port = htons(12345);
-//    start
-////    pthread_t thread_id[25];
-////    for ( int i = 0; i < 5; i++) {
-////        args.s_addr = &server_sockaddr;
-////        snprintf(buf, 15, "hello_world_%d", i);
-////        args.frame = buf;
-////        int ret = pthread_create(&thread_id[i], NULL, (void*) start_client, (void *) &args);
-////        if (ret != 0) { info("Error from pthread: %d\n", ret); exit(1); }
-////        pthread_join(thread_id[i], 0);
-//////        sleep(2);
-////    }
-//    return 0;
-//}
+    return 0;
+}

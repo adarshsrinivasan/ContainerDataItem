@@ -23,47 +23,6 @@
 #include <infiniband/verbs.h>
 #include "structs.h"
 
-#define DEFAULT_RDMA_PORT (12345)
-#define MAX_CONNECTION (7)
-#define ENABLE_ERROR
-//#define ENABLE_DEBUG
-
-#define CQ_CAPACITY (16)
-#define MAX_SGE (2)
-#define MAX_WR (10)
-#define TIMEOUTMS (2000)
-
-#define HANDLE(x)  do { if (!(x)) error(#x " failed (returned zero/null).\n"); } while (0)
-#define HANDLE_NZ(x) do { if ( (x)) error(#x " failed (returned non-zero)." ); } while (0)
-
-#ifdef ENABLE_ERROR
-#define error(msg, args...) do {\
-        fprintf(stderr, "%s : %d : ERROR : "msg, __FILE__, __LINE__, ## args);\
-    }while(0);
-#else
-#define error(msg, args...)
-#endif
-
-#ifdef ENABLE_DEBUG
-#define debug(msg, args...) do {\
-    printf("DEBUG: "msg, ## args);\
-}while(0);
-
-#else
-#define debug(msg, args...)
-#endif
-
-#define info(msg, args...) do { \
-    struct timeval tv; \
-    gettimeofday(&tv, NULL); \
-    struct tm *tm_info = localtime(&tv.tv_sec); \
-    char buffer[40]; \
-    strftime(buffer, 40, "%Y-%m-%d %H:%M:%S", tm_info); \
-    fprintf(stdout, "log: %s.%03ld " msg, buffer, tv.tv_usec / 1000, ##args); \
-} while (0);
-
-#define DATA_SIZE (1024 * 1024 * 10)
-
 int get_addr(char *dst, struct sockaddr *addr);
 
 void show_memory_map(const char* memory_region);

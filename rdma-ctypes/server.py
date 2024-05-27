@@ -1,17 +1,29 @@
 import ctypes
 import socket
 import sys
+import os
 from utils import sockaddr_in, PF_INET, to_sockaddr
+import threading
+from msg_queue import IPCMsgQueue
+
+DATA_SIZE = 1024
 
 server_libc = ctypes.CDLL('libs/librdma_server_lib.so')
 
-server_libc.start_rdma_server.argtypes = [ctypes.POINTER(sockaddr_in)]
+server_libc.start_rdma_server.argtypes = [ctypes.POINTER(sockaddr_in), ctypes.c_int]
 server_libc.start_rdma_server.restype = ctypes.c_char_p
 
 
-def start_server(sockaddr):
-    received_frame = server_libc.start_rdma_server(sockaddr)
-    print(f"Received Frame: {received_frame}")
+def handle_frame(frame):
+    print(f"Handle frame called with frame - {frame}! ")
+
+
+def start_server(sockaddr, msg_queue):
+    try:
+        server_libc.start_rdma_server(sockaddr, msg_queue.msq_id)
+    except KeyboardInterrupt:
+        msg_queue.clear_queue()
+        os._exit(0)
 
 
 # python server.py -l 10.10.1.1 -p 12345
@@ -27,4 +39,19 @@ if __name__ == '__main__':
     else:
         port = 12345
     sockaddr = to_sockaddr(af, bind_addr, port)
-    start_server(sockaddr)
+
+    msg_queue = IPCMsgQueue(1234)
+    msq_id = msg_queue.get_queue()
+
+    try:
+        t1 = threading.Thread(target=msg_queue.receive_frame_from_queue, args=(DATA_SIZE, handle_frame, ))
+        t2 = threading.Thread(target=start_server, args=(sockaddr, msg_queue))
+        t1.start()
+        t2.start()
+
+        t1.join()
+        t2.join()
+
+    except KeyboardInterrupt:
+        msg_queue.clear_queue()
+        sys.exit(0)

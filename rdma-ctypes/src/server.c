@@ -1,5 +1,7 @@
 #include "utils.h"
 #include "structs.h"
+#include <sys/msg.h>
+#include <sys/ipc.h>
 #include <fcntl.h>
 #include <pthread.h>
 
@@ -227,8 +229,6 @@ static void accept_conn(struct rdma_cm_id *cm_client_id) {
 }
 
 void* wait_for_event(void *args) {
-    int ret;
-
     struct thread_arguments *arguments = (struct thread_arguments*) args;
     struct client_resources *_client_struct = arguments->client_resources;
     struct exchange_buffer *server_buffer = &arguments->server_buffer;
@@ -269,7 +269,6 @@ void* wait_for_event(void *args) {
                 int count = 0;
                 while (strcmp(frame->memory_region, "") == 0 && count < 5) {
                     read_message_buffer(frame, _client_struct, client_buffer);
-//                    sleep(1);
                     count += 1;
                 }
                 if (count >= 5) {
@@ -278,7 +277,6 @@ void* wait_for_event(void *args) {
                     disconnect_server(_client_struct, frame, cm_event_channel, cm_server_id);
                     pthread_exit(NULL);
                 }
-                show_memory_map(frame->memory_region);
                 received_frame = frame->memory_region;
                 post_send_ACK(_client_struct, server_buffer);
                 break;
@@ -297,33 +295,24 @@ void* wait_for_event(void *args) {
     pthread_exit(NULL);
 }
 
-//int thread_fun(struct client_resources* client_res_t) {
-//    struct rdma_cm_event *received_event = NULL;
-//    struct memory_region *frame = NULL;
-//    while (rdma_get_cm_event(cm_event_channel, &received_event) == 0) {
-//        /* Initialize the received event */
-//        struct rdma_cm_event cm_event;
-//        struct ibv_wc wc;
-//        memcpy(&cm_event, received_event, sizeof(*received_event));
-//        info("%s event received \n", rdma_event_str(cm_event.event));
-//
-//        HANDLE_NZ(rdma_ack_cm_event(received_event));
-//        /* SWITCH case to check what type of event was received */
-//        switch (cm_event.event) {
-//            case RDMA_CM_EVENT_CONNECT_REQUEST:
-//                frame = (struct memory_region *) malloc(sizeof(struct memory_region *));
-//                setup_client_resources(cm_event.id, client_res_t); // send a recv req for client_metadata
-//                build_message_buffer(frame, client_res_t);
-//                post_recv_hello(client_res_t);
-//                accept_conn(cm_event.id);
-//                break;
-//            default:
-//                return -1;
-//        }
-//    }
-//}
+static void send_msg_to_queue(int msq_id, char* frame, struct frame_msg* sbuf) {
+    size_t buf_length;
 
-const char* start_rdma_server(struct sockaddr_in *server_sockaddr) {
+    (void) strcpy(sbuf->ftext, frame);
+    buf_length = strlen(sbuf->ftext) + 1;
+
+    // setting the message type to 1 - can change in case sending different types of messages
+    sbuf->ftype = 1;
+
+    if (msgsnd(msq_id, sbuf, buf_length, IPC_NOWAIT) < 0) {
+        error ("%d, %s, %ld\n", msq_id, sbuf->ftext, buf_length);
+        exit(1);
+    }
+    else
+        info("Message: %d %ld %s %ld sent \n", msq_id, sbuf->ftype, sbuf->ftext, buf_length);
+}
+
+const char* start_rdma_server(struct sockaddr_in *server_sockaddr, int msq_id) {
     // Create RDMA Event Channel
     HANDLE(cm_event_channel = rdma_create_event_channel());
 
@@ -343,9 +332,7 @@ const char* start_rdma_server(struct sockaddr_in *server_sockaddr) {
          inet_ntoa(server_sockaddr->sin_addr),
          ntohs(server_sockaddr->sin_port));
 
-    info("Client connected \n");
-
-
+    struct frame_msg sbuf;
     /* Init the client resources */
     for(;;) {
         pthread_t thread_id;
@@ -359,30 +346,32 @@ const char* start_rdma_server(struct sockaddr_in *server_sockaddr) {
         int ret = pthread_create(&thread_id, NULL, (void*) wait_for_event, (void *) &args);
         if (ret != 0) { info("Error from pthread: %d\n", ret); exit(1); }
         pthread_join(thread_id, 0);
-        info("%s - received frame \n", received_frame);
+
+        // send frame to the queue
+        send_msg_to_queue(msq_id, received_frame, &sbuf);
+
+        // clear the memory region
         memset(received_frame, 0, DATA_SIZE);
         free(args.frame);
         free(args.client_resources);
-
     }
-    return received_frame;
 }
 
-const char* start_server(struct sockaddr_in *server_sockaddr) {
-    return start_rdma_server(server_sockaddr);
+const char* start_server(struct sockaddr_in *server_sockaddr, int msq_id) {
+    return start_rdma_server(server_sockaddr, msq_id);
 }
 
-//int main(int argc, char **argv) {
-//    struct sockaddr_in server_sockaddr;
-//
-//    bzero(&server_sockaddr, sizeof(server_sockaddr));
-//    server_sockaddr.sin_family = AF_INET;
-//    server_sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-//    int ret = get_addr("10.10.1.1", (struct sockaddr*) &server_sockaddr);
-//    if (ret) {
-//        error("Invalid IP");
-//        return ret;
-//    }
-//    server_sockaddr.sin_port = htons(12345);
-//    start_rdma_server(&server_sockaddr);
-//}
+int main(int argc, char **argv) {
+    struct sockaddr_in server_sockaddr;
+
+    bzero(&server_sockaddr, sizeof(server_sockaddr));
+    server_sockaddr.sin_family = AF_INET;
+    server_sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    int ret = get_addr("10.10.1.1", (struct sockaddr*) &server_sockaddr);
+    if (ret) {
+        error("Invalid IP");
+        return ret;
+    }
+    server_sockaddr.sin_port = htons(12345);
+    start_rdma_server(&server_sockaddr, 0);
+}
