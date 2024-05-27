@@ -333,6 +333,7 @@ const char* start_rdma_server(struct sockaddr_in *server_sockaddr, int msq_id) {
          ntohs(server_sockaddr->sin_port));
 
     struct frame_msg sbuf;
+    sbuf.ftext = malloc(DATA_SIZE);
     /* Init the client resources */
     for(;;) {
         pthread_t thread_id;

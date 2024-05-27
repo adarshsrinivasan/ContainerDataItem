@@ -6,7 +6,7 @@ from utils import sockaddr_in, PF_INET, to_sockaddr
 import threading
 from msg_queue import IPCMsgQueue
 
-DATA_SIZE = 1024
+DATA_SIZE = 1024 * 1024 * 10
 
 server_libc = ctypes.CDLL('libs/librdma_server_lib.so')
 

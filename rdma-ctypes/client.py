@@ -11,7 +11,8 @@ client_libc.start_client.restype = ctypes.c_int
 
 def start_client(sockaddr, str_to_send):
     print(f"Sending frame: {str_to_send}")
-    buf = ctypes.create_string_buffer(str_to_send.encode(), len(str_to_send))
+    print(str_to_send.encode('utf-16'))
+    buf = ctypes.create_string_buffer(str_to_send.encode('utf-8'), len(str_to_send))
     if client_libc.start_client(sockaddr, buf) == 0:
         return True
 
@@ -29,7 +30,7 @@ if __name__ == '__main__':
     else:
         port = 12345
     sockaddr = to_sockaddr(af, bind_addr, port)
-    for x in range(1, 5):
+    for x in range(1, 2):
         print(f"Sending {x}")
         str_to_send = generate_big_data()
         start_client(sockaddr, str_to_send)

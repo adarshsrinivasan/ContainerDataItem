@@ -69,7 +69,7 @@ struct exchange_buffer {
 
 struct frame_msg {
     long ftype;
-    char ftext[DATA_SIZE];
+    char *ftext;
 };
 
 struct thread_arguments {
