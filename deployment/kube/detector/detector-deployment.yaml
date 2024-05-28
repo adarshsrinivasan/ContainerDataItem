@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: detector
-          image: adarshzededa/cdi-detector-rpc:latest
+          image: shirinebadi/cdi-detector:latest
           imagePullPolicy: Always
           env:
             - name: RPC_HOST
@@ -33,13 +33,5 @@ spec:
               memory: 400Mi
           ports:
             - containerPort: 50000
-          readinessProbe:
-            grpc:
-              port: 50000
-            periodSeconds: 1
-            initialDelaySeconds: 10
-          livenessProbe:
-            grpc:
-              port: 50000
-            initialDelaySeconds: 10
-            periodSeconds: 60
+      nodeSelector:
+        type: detector

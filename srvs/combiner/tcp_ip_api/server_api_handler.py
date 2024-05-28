@@ -21,12 +21,12 @@ class ProcessService:
 
     def TransferPayload(self, payload):
         global cache_client
-        logging.info(f"Received Payload.")
+        logging.info("Received payload.")
         combiner_obj = Combiner(local_buffer_dir=local_buffer_dir, packed_data=payload, cache_client=cache_client)
         done = combiner_obj.combiner()
         if done:
-            logging.info("Updating finish time")
-            update_finish_time(stream_id=combiner_obj.stream_id, finish_time=datetime.now().time())
+            logging.info(f"Updating finish time {datetime.now().time()}")
+            #update_finish_time(stream_id=combiner_obj.stream_id, finish_time=datetime.now().time())
             upload_file(combiner_obj.stream_id, combiner_obj.local_out_file_path, combiner_obj.remote_video_save_path,
                         combiner_obj.sftp_host, combiner_obj.sftp_port, combiner_obj.sftp_user, combiner_obj.sftp_pwd)
         return {"err": ""}
@@ -39,8 +39,7 @@ def serve_tcp(tcp_host, tcp_port):
 
     while True:
         client_socket, address = server_socket.accept()
-        logging.info(f"Connected to client: {address}")
-
+        
         try:
             data = ""
             while True:
@@ -52,7 +51,6 @@ def serve_tcp(tcp_host, tcp_port):
                     break
 
             payload = json.loads(data)["payload"]
-            logging.info("Loaded Json")
             process_service = ProcessService()
             response = process_service.TransferPayload(payload)
 

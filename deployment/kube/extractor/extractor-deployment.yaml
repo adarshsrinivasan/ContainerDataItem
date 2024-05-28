@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: extractor
-          image: adarshzededa/cdi-extractor-rpc:latest
+          image: shirinebadi/cdi-extractor:latest
           imagePullPolicy: Always
           env:
             - name: HOST
@@ -35,15 +35,5 @@ spec:
               memory: 400Mi
           ports:
             - containerPort: 50000
-          readinessProbe:
-            httpGet:
-              path: /api/v1/health
-              port: 50000
-            periodSeconds: 1
-            initialDelaySeconds: 10
-          livenessProbe:
-            httpGet:
-              path: /api/v1/health
-              port: 50000
-            initialDelaySeconds: 10
-            periodSeconds: 60
+      nodeSelector:
+        type: extractor

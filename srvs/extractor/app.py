@@ -13,6 +13,6 @@ if __name__ == '__main__':
     rest_host = getenv_with_default(HOST_ENV, "0.0.0.0")
     rest_port = getenv_with_default(PORT_ENV, "50002")
 
-    create_table()
+    # create_table()
     serve_rest(host=rest_host, port=rest_port)
 

@@ -21,7 +21,6 @@ def serve_tcp(tcp_host, tcp_port):
 
     while True:
         client_socket, address = server_socket.accept()
-        logging.info(f"Connected to client: {address}")
 
         try:
             data = ""
@@ -34,7 +33,6 @@ def serve_tcp(tcp_host, tcp_port):
                     break
 
             payload = json.loads(data)["payload"]
-            logging.info("Loaded Json")
             process_service = ProcessService()
             response = process_service.TransferPayload(payload)
 
