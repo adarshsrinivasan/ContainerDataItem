@@ -14,7 +14,7 @@ static struct rdma_cm_id *cm_server_id = NULL;
 
 static char* received_frame = NULL;
 
-/* Setup client resources like PD, CC, CQ and QP */
+/* Setup client.sh resources like PD, CC, CQ and QP */
 static void setup_client_resources(struct rdma_cm_id *cm_client_id, struct client_resources *_client_struct) {
     if (!cm_client_id) {
         error("Client id is still NULL \n");
@@ -22,11 +22,11 @@ static void setup_client_resources(struct rdma_cm_id *cm_client_id, struct clien
     }
     _client_struct->id = cm_client_id;
 
-    /* Init the Protection Domain for the client */
+    /* Init the Protection Domain for the client.sh */
     HANDLE(_client_struct->pd = ibv_alloc_pd(cm_client_id->verbs));
     debug("Protection domain (PD) allocated: %p \n", _client_struct->pd)
 
-    /* Init the Completion Channel for the client */
+    /* Init the Completion Channel for the client.sh */
     HANDLE(_client_struct->comp_channel = ibv_create_comp_channel(cm_client_id->verbs));
     debug("I/O completion event channel created: %p \n",
           _client_struct->comp_channel)
@@ -37,7 +37,7 @@ static void setup_client_resources(struct rdma_cm_id *cm_client_id, struct clien
         fprintf(stderr, "Failed to change file descriptor of Completion Event Channel\n");
     }
 
-    /* Init the Completion Queue for the client */
+    /* Init the Completion Queue for the client.sh */
     HANDLE(_client_struct->cq = ibv_create_cq(cm_client_id->verbs,
                                           CQ_CAPACITY,
                                           NULL,
@@ -65,10 +65,10 @@ static void setup_client_resources(struct rdma_cm_id *cm_client_id, struct clien
 }
 
 /*
- * Receive HELLO message from client
- * Create a buffer for receiving client's message. Register ibv_reg_mr using client's pd,
+ * Receive HELLO message from client.sh
+ * Create a buffer for receiving client.sh's message. Register ibv_reg_mr using client.sh's pd,
  * message addr, length of message, and permissions for the buffer.
- * Post the client buffer as a Receive Request (RR) to the Work Queue (WQ)
+ * Post the client.sh buffer as a Receive Request (RR) to the Work Queue (WQ)
  * */
 static void post_recv_hello(struct client_resources* _client_struct, struct exchange_buffer *client_buffer) {
     client_buffer->message = malloc(sizeof(struct msg));
@@ -89,7 +89,7 @@ static void post_recv_hello(struct client_resources* _client_struct, struct exch
                             &client_recv_wr,
                             &bad_client_recv_wr));
 
-    info("Pre-posting Receive HELLO \n");
+    debug("Pre-posting Receive HELLO \n");
 }
 
 /*
@@ -123,7 +123,7 @@ static void post_send_hello(struct client_resources* _client_struct, struct exch
     HANDLE_NZ(ibv_post_send(_client_struct->qp, &server_send_wr, &bad_server_send_wr));
     process_work_completion_events(_client_struct->comp_channel,  &wc, 1);
 
-    info("Sending HELLO \n");
+    debug("Sending HELLO \n");
 }
 
 static void post_send_ACK(struct client_resources* _client_struct, struct exchange_buffer *server_buffer) {
@@ -155,11 +155,11 @@ static void post_send_ACK(struct client_resources* _client_struct, struct exchan
     HANDLE_NZ(ibv_post_send(_client_struct->qp, &server_send_wr, &bad_server_send_wr));
     //process_work_completion_events(client_res->comp_channel,  &wc, 1);
 
-    info("Sending POST ACK \n");
+    debug("Sending POST ACK \n");
 }
 
 /*
- * Create Memory Buffer to receive message from client
+ * Create Memory Buffer to receive message from client.sh
  */
 static void build_message_buffer(struct memory_region *region, struct client_resources* _client_struct) {
     region->memory_region = malloc(DATA_SIZE);
@@ -170,11 +170,11 @@ static void build_message_buffer(struct memory_region *region, struct client_res
                                                   DATA_SIZE,
                                                   (IBV_ACCESS_LOCAL_WRITE |
                                                    IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_WRITE));
-    info("Memory Map built: ADDR: %p\n", (unsigned long *) region->memory_region );
+    debug("Memory Map built: ADDR: %p \n", (unsigned long *) region->memory_region);
 }
 
 /*
- * Post a QR to receive the message buffer from the client
+ * Post a QR to receive the message buffer from the client.sh
  */
 static int post_recv_frame(struct client_resources* _client_struct, struct exchange_buffer *client_buffer) {
     struct ibv_wc wc;
@@ -190,7 +190,7 @@ static int post_recv_frame(struct client_resources* _client_struct, struct excha
     HANDLE_NZ(ibv_post_recv(_client_struct->qp /* which QP */,
                             &client_recv_wr /* receive work request*/,
                             &bad_client_recv_wr /* error WRs */));
-    info("Pre-posting Receive Buffer for Address \n");
+    debug("Pre-posting Receive Buffer for Address \n");
     return 0;
 }
 
@@ -214,10 +214,10 @@ static void read_message_buffer(struct memory_region *region, struct client_reso
     HANDLE_NZ(ibv_post_send(_client_struct->qp,
                             &server_send_wr,
                             &bad_server_send_wr));
-    info("RDMA read the remote memory map. \n");
+    debug("RDMA read the remote memory map. \n");
 }
 
-/* Establish connection with the client */
+/* Establish connection with the client.sh */
 static void accept_conn(struct rdma_cm_id *cm_client_id) {
     struct rdma_conn_param conn_param;
     memset(&conn_param, 0, sizeof(conn_param));
@@ -228,12 +228,33 @@ static void accept_conn(struct rdma_cm_id *cm_client_id) {
     debug("Wait for : RDMA_CM_EVENT_ESTABLISHED event \n")
 }
 
+void send_msg_to_queue(int msq_id, char* frame, struct frame_msg* sbuf) {
+    size_t buf_length;
+    sbuf->ftext = (char *) malloc(DATA_SIZE);
+
+    (void) strcpy(sbuf->ftext, frame);
+    buf_length = sizeof sbuf->ftext + 1;
+
+    // setting the message type to 1 - can change in case sending different types of messages
+    sbuf->ftype = 1;
+    int ret_id = msgsnd(msq_id, sbuf, buf_length, 0);
+    if ( ret_id == -1 ) {
+        error ("errno: %d, msq_id: %d, buf_length: %ld failed to send. \n", errno, msq_id, buf_length);
+        perror ("msg send error \n");
+        exit(1);
+    }
+    else
+        debug("Message of size %ld sent in msq_id: %d \n", buf_length, msq_id);
+}
+
 void* wait_for_event(void *args) {
     struct thread_arguments *arguments = (struct thread_arguments*) args;
     struct client_resources *_client_struct = arguments->client_resources;
     struct exchange_buffer *server_buffer = &arguments->server_buffer;
     struct exchange_buffer *client_buffer = &arguments->client_buffer;
     struct memory_region *frame = arguments->frame;
+    int msq_id = arguments->msq_id;
+    struct frame_msg *sbuf = arguments->sbuf;
     struct rdma_cm_event *received_event = NULL;
 
     while (rdma_get_cm_event(cm_event_channel, &received_event) == 0) {
@@ -254,7 +275,7 @@ void* wait_for_event(void *args) {
                 accept_conn(cm_event.id);
                 break;
 
-            /*  After the client establishes the connection */
+            /*  After the client.sh establishes the connection */
             case RDMA_CM_EVENT_ESTABLISHED:
                 process_work_completion_events(_client_struct->comp_channel, &wc, 1);
                 //show_exchange_buffer(client_buffer->message);
@@ -266,27 +287,29 @@ void* wait_for_event(void *args) {
 
                 read_message_buffer(frame, _client_struct, client_buffer);
 
-                int count = 0;
-                while (strcmp(frame->memory_region, "") == 0 && count < 5) {
+                int cnt = 0;
+                while (strcmp(frame->memory_region, "") == 0 && cnt < 3) {
                     read_message_buffer(frame, _client_struct, client_buffer);
-                    count += 1;
+                    cnt += 1;
+                    usleep(1);
                 }
-                if (count >= 5) {
+                if (strcmp(frame->memory_region, "") == 0) {
                     error("RDMA read returns empty data. Disconnecting Server \n");
                     rdma_buffer_deregister(frame->memory_region_mr);
-                    disconnect_server(_client_struct, frame, cm_event_channel, cm_server_id);
+                    disconnect_server(_client_struct);
                     pthread_exit(NULL);
                 }
-                received_frame = frame->memory_region;
-                info("Received frame of size: %ld \n", strlen(received_frame));
+                received_frame = (char *) malloc ( DATA_SIZE );
+                strcpy(received_frame, frame->memory_region);
                 post_send_ACK(_client_struct, server_buffer);
                 break;
 
             /* Disconnect and Cleanup */
             case RDMA_CM_EVENT_DISCONNECTED:
                 rdma_buffer_deregister(frame->memory_region_mr);
-                disconnect_server(_client_struct, frame, cm_event_channel, cm_server_id);
+                disconnect_server(_client_struct);
                 debug("Cleanup complete - starting over \n");
+                send_msg_to_queue(msq_id, received_frame, sbuf);
                 pthread_exit(NULL);
             default:
                 error("Event not found %s\n", rdma_event_str(cm_event.event));
@@ -296,22 +319,7 @@ void* wait_for_event(void *args) {
     pthread_exit(NULL);
 }
 
-static void send_msg_to_queue(int msq_id, char* frame, struct frame_msg* sbuf) {
-    size_t buf_length;
 
-    (void) strcpy(sbuf->ftext, frame);
-    buf_length = strlen(sbuf->ftext) + 1;
-
-    // setting the message type to 1 - can change in case sending different types of messages
-    sbuf->ftype = 1;
-
-    if (msgsnd(msq_id, sbuf, buf_length, IPC_NOWAIT) < 0) {
-        error ("%d, %ld failed to send. Check the resource limit\n", msq_id, buf_length);
-        exit(1);
-    }
-    else
-        info("Message of size %ld sent in msq_id: %d \n", buf_length, msq_id);
-}
 
 const char* start_rdma_server(struct sockaddr_in *server_sockaddr, int msq_id) {
     // Create RDMA Event Channel
@@ -333,9 +341,7 @@ const char* start_rdma_server(struct sockaddr_in *server_sockaddr, int msq_id) {
          inet_ntoa(server_sockaddr->sin_addr),
          ntohs(server_sockaddr->sin_port));
 
-    struct frame_msg sbuf;
-    sbuf.ftext = malloc(DATA_SIZE);
-    /* Init the client resources */
+    /* Init the client.sh resources */
     for(;;) {
         pthread_t thread_id;
         info("SPINNING NEW THREAD\n");
@@ -344,18 +350,19 @@ const char* start_rdma_server(struct sockaddr_in *server_sockaddr, int msq_id) {
         args.client_resources = (struct client_resources *) malloc(sizeof(struct client_resources));
         args.server_buffer = server_buffer;
         args.client_buffer = client_buffer;
+
+        args.sbuf = (struct frame_msg *) malloc(sizeof(struct frame_msg *));
+
         args.frame = (struct memory_region *) malloc(sizeof(struct memory_region *));
+        args.msq_id = msq_id;
         int ret = pthread_create(&thread_id, NULL, (void*) wait_for_event, (void *) &args);
-        if (ret != 0) { info("Error from pthread: %d\n", ret); exit(1); }
+        if (ret != 0) { error("Error from pthread: %d\n", ret); exit(1); }
         pthread_join(thread_id, 0);
 
-        // send frame to the queue
-        send_msg_to_queue(msq_id, received_frame, &sbuf);
-
-        // clear the memory region
         memset(received_frame, 0, DATA_SIZE);
         free(args.frame);
         free(args.client_resources);
+        free(args.sbuf);
     }
 }
 
@@ -375,5 +382,6 @@ int main(int argc, char **argv) {
         return ret;
     }
     server_sockaddr.sin_port = htons(12345);
-    start_rdma_server(&server_sockaddr, 0);
+    int msq_id = msgget(123489, IPC_CREAT | 0666);
+    start_rdma_server(&server_sockaddr, msq_id);
 }

@@ -4,7 +4,7 @@ import sys
 import os
 from utils import sockaddr_in, PF_INET, to_sockaddr, DATA_SIZE
 import threading
-from msg_queue import IPCMsgQueue
+from msq import IPCMsgQueue
 
 server_libc = ctypes.CDLL('libs/librdma_server_lib.so')
 
@@ -12,6 +12,7 @@ server_libc.start_rdma_server.argtypes = [ctypes.POINTER(sockaddr_in), ctypes.c_
 server_libc.start_rdma_server.restype = ctypes.c_char_p
 
 
+# *implement your logic here*
 def handle_frame(frame):
     print(f"Handle frame called with frame of size: ", len(frame))
 
@@ -42,7 +43,7 @@ if __name__ == '__main__':
     msq_id = msg_queue.get_queue()
 
     try:
-        t1 = threading.Thread(target=msg_queue.receive_frame_from_queue, args=(DATA_SIZE, handle_frame, ))
+        t1 = threading.Thread(target=msg_queue.receive_frame_from_queue, args=(DATA_SIZE, handle_frame,))
         t2 = threading.Thread(target=start_server, args=(sockaddr, msg_queue))
         t1.start()
         t2.start()
@@ -52,4 +53,4 @@ if __name__ == '__main__':
 
     except KeyboardInterrupt:
         msg_queue.clear_queue()
-        sys.exit(0)
+        sys.exit(1)

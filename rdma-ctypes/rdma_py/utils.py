@@ -7,7 +7,7 @@ UNIX_PATH_MAX = 108
 PF_UNIX = socket.AF_UNIX
 PF_INET = socket.AF_INET
 
-DATA_SIZE = 1024 * 1024
+DATA_SIZE = 1024 * 1024 * 10
 
 
 def SUN_LEN(path):
@@ -41,7 +41,6 @@ def to_sockaddr(family, address, port):
         if address:
             bytes_ = [int(i) for i in address.split('.')]
             addr.sin_addr = (ctypes.c_byte * 4)(*bytes_)
-        addr_len = ctypes.c_int(ctypes.sizeof(addr))
     else:
         raise NotImplementedError('Not implemented family %s' % (family,))
 

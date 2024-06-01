@@ -8,7 +8,7 @@ static struct exchange_buffer server_buff, client_buff;
 static struct rdma_cm_id *cm_client_id = NULL;
 static struct client_resources *client_res = NULL;
 static struct rdma_event_channel *cm_event_channel = NULL;
-static struct ibv_qp_init_attr qp_init_attr; // client queue pair attributes
+static struct ibv_qp_init_attr qp_init_attr; // client.sh queue pair attributes
 
 
 #define CLIENT_HELLO (123)
@@ -19,7 +19,7 @@ struct client_buffer_args {
 };
 
 /*
- * Create client ID and resolve the destination IP address to RDMA Address
+ * Create client.sh ID and resolve the destination IP address to RDMA Address
  */
 static void resolve_addr(struct sockaddr_in *s_addr) {
     client_res = (struct client_resources *) malloc(sizeof(struct client_resources));
@@ -39,7 +39,7 @@ static void resolve_addr(struct sockaddr_in *s_addr) {
     debug("waiting for cm event: RDMA_CM_EVENT_ADDR_RESOLVED\n")
 }
 
-/* Setup client resources like PD, CC, CQ, QP */
+/* Setup client.sh resources like PD, CC, CQ, QP */
 static int setup_client_resources(struct sockaddr_in *s_addr) {
     info("Trying to connect to server at : %s port: %d \n",
          inet_ntoa(s_addr->sin_addr),
@@ -119,7 +119,7 @@ static int post_send_hello() {
     if (ret < 0) {
         return ret;
     }
-    info("Sending HELLO \n");
+    debug("Sending HELLO \n");
     return 0;
 }
 
@@ -144,7 +144,7 @@ static int post_recv_hello() {
     HANDLE_NZ(ibv_post_recv(client_res->qp /* which QP */,
                             &server_recv_wr /* receive work request*/,
                             &bad_server_recv_wr /* error WRs */));
-    info("Pre-posting Receive HELLO \n");
+    debug("Pre-posting Receive HELLO \n");
     return 0;
 }
 
@@ -165,7 +165,7 @@ static void build_message_buffer(struct memory_region *region, const char* str_t
                                                          IBV_ACCESS_REMOTE_READ |
                                                          IBV_ACCESS_REMOTE_WRITE));
 
-    info("Memory Map built: ADDR: %p\n", (unsigned long *) region->memory_region);
+    debug("Memory Map built: ADDR: %p\n", (unsigned long *) region->memory_region);
 }
 
 /*
@@ -204,7 +204,7 @@ static int send_message_to_server(struct memory_region *region) {
     if (ret < 0) {
         return ret;
     }
-    info("POST MESSAGE TO SERVER \n\n");
+    debug("POST MESSAGE TO SERVER \n\n");
     return 0;
 }
 
@@ -238,7 +238,7 @@ int post_recv_ack() {
                             &server_recv_wr /* receive work request*/,
                             &bad_server_recv_wr /* error WRs */));
 
-    info("Pre-posting Receive ACK \n");
+    debug("Pre-posting Receive ACK \n");
     return 0;
 }
 
@@ -246,10 +246,11 @@ int post_recv_ack() {
  * Blocking while loop which checks for incoming events and calls the necessary
  * functions based on the received events
  */
-static int wait_for_event(struct sockaddr_in *s_addr, char* str_to_send) {
+static void wait_for_event(struct sockaddr_in *s_addr, char* str_to_send) {
 
     struct rdma_cm_event *received_event = NULL;
     struct memory_region *frame = NULL;
+    struct timespec start, end;
 
     resolve_addr(s_addr);
     while (rdma_get_cm_event(cm_event_channel, &received_event) == 0) {
@@ -280,6 +281,9 @@ static int wait_for_event(struct sockaddr_in *s_addr, char* str_to_send) {
                 process_work_completion_events(client_res->comp_channel, &wc, 1);
 
                 post_recv_ack();
+
+                clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+
                 int ret = send_message_to_server(frame);
                 if (ret < 0) {
                     error("Unable to send message to server \n");
@@ -289,17 +293,19 @@ static int wait_for_event(struct sockaddr_in *s_addr, char* str_to_send) {
                 process_work_completion_events(client_res->comp_channel, &wc, 1);
                 show_exchange_buffer(server_buff.message);
                 debug("Received ACK \n");
+                clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+                const uint64_t ns = (end.tv_sec * 1000000000 + end.tv_nsec) - (start.tv_sec * 1000000000 + start.tv_nsec);
+                info("elapsed %7.02f ms (%lu ns)\n ", ns / 1000000.0, ns);
+
                 rdma_disconnect(client_res->id);
                 disconnect_client(client_res, cm_event_channel, frame, &server_buff, &client_buff);
                 cm_client_id = NULL;
-                return 0;
-
+                return;
             default:
                 error("Event not found %s \n", rdma_event_str(cm_event.event));
-                return -1;
+                return;
         }
     }
-    return 0;
 }
 
 void start_client(struct sockaddr_in* s_addr, char* frame) {
@@ -323,16 +329,6 @@ int main(int argc, char **argv) {
         return ret;
     }
     server_sockaddr.sin_port = htons(12345);
-    start_client(&server_sockaddr, "hello world");
-//    pthread_t thread_id[25];
-//    for ( int i = 0; i < 5; i++) {
-//        args.s_addr = &server_sockaddr;
-//        snprintf(buf, 15, "hello_world_%d", i);
-//        args.frame = buf;
-//        int ret = pthread_create(&thread_id[i], NULL, (void*) start_client, (void *) &args);
-//        if (ret != 0) { info("Error from pthread: %d\n", ret); exit(1); }
-//        pthread_join(thread_id[i], 0);
-////        sleep(2);
-//    }
+    start_client(&server_sockaddr,"Hello World");
     return 0;
 }

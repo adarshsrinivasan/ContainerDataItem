@@ -28,7 +28,7 @@ int get_addr(char *dst, struct sockaddr *addr);
 void show_memory_map(const char* memory_region);
 void show_exchange_buffer(struct msg *attr);
 
-int disconnect_server(struct client_resources* client_res, struct memory_region *frame, struct rdma_event_channel *cm_event_channel, struct rdma_cm_id *cm_server_id);
+int disconnect_server(struct client_resources* client_res);
 int disconnect_client(struct client_resources* client_res, struct rdma_event_channel *cm_event_channel, struct memory_region* region, struct exchange_buffer *server_buff, struct exchange_buffer *client_buff);
 
 struct ibv_mr *rdma_buffer_register(struct ibv_pd *pd,

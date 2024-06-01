@@ -175,23 +175,22 @@ int disconnect_client(struct client_resources* client_res, struct rdma_event_cha
 {
     int ret = -1;
 
-    /* Destroy client cm id */
+    /* Destroy client.sh cm id */
     ret = rdma_destroy_id(client_res->id);
     if (ret) {
-        error("Failed to destroy client id cleanly, %d \n", -errno);
+        error("Failed to destroy client.sh id cleanly, %d \n", -errno);
     }
 
     rdma_buffer_deregister(region->memory_region_mr);
     rdma_buffer_deregister(client_buff->buffer);
     rdma_buffer_deregister(server_buff->buffer);
-//    free(client_res);
 
     rdma_destroy_event_channel(cm_event_channel);
     debug("Client resource clean up is complete \n");
     return 0;
 }
 
-int disconnect_server(struct client_resources* client_res, struct memory_region *frame, struct rdma_event_channel *cm_event_channel, struct rdma_cm_id *cm_server_id)
+int disconnect_server(struct client_resources* client_res)
 {
     int ret = -1;
 

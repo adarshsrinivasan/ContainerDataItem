@@ -22,9 +22,7 @@
 #include <infiniband/verbs.h>
 
 #define DEFAULT_RDMA_PORT (12345)
-#define MAX_CONNECTION (7)
 #define ENABLE_ERROR
-//#define ENABLE_DEBUG
 
 #define CQ_CAPACITY (16)
 #define MAX_SGE (2)
@@ -60,7 +58,7 @@
     fprintf(stdout, "log: %s.%03ld " msg, buffer, tv.tv_usec / 1000, ##args); \
 } while (0);
 
-#define DATA_SIZE (1024 * 1024)
+#define DATA_SIZE (1024 * 1024 * 20)
 
 struct exchange_buffer {
     struct msg* message;
@@ -77,6 +75,8 @@ struct thread_arguments {
     struct exchange_buffer server_buffer;
     struct exchange_buffer client_buffer;
     struct memory_region *frame;
+    int msq_id;
+    struct frame_msg *sbuf;
 };
 
 struct msg {

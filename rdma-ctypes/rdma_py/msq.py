@@ -46,29 +46,32 @@ class FrameMsg(Structure):
 
 class IPCMsgQueue:
     def __init__(self, key):
-        self.msq_id = None
         self.key = key
+        self.msq_id = None
+
+    def ctl_msg_queue(self):
+        raise NotImplementedError
+
+    def send_frame_to_queue(self):
+        raise NotImplementedError
 
     def receive_frame_from_queue(self, buf_size, callback_fn=None):
-        cnt = 0
         while True:
             buf = create_string_buffer(buf_size + 16)
-            len = libc.msgrcv(self.msq_id, buf, buf_size + 16, 1, 0)
-            if len != -1:
+            recv_len = libc.msgrcv(self.msq_id, buf, buf_size + 16, 1, 0)
+            if recv_len != -1:
                 frame_msg = FrameMsg.from_buffer(buf)
-                cnt += 1
-                print("Received:", frame_msg.ftype)
                 if callback_fn: callback_fn(frame_msg.ftext)
             else:
-                logging.error(f"Error in receiving frame from the queue: cnt: {cnt} missing")
+                logging.error(f"Error in receiving frame from the queue")
                 os._exit(0)
 
     def get_queue(self):
-        logging.info("Getting the queue")
+        logging.info(f"get_queue: getting a new or existing queue for key: {self.key}")
         self.msq_id = libc.msgget(self.key, IPC_CREAT | 0o644)
         return self.msq_id
 
     def clear_queue(self):
-        logging.info("Clearing the queue")
+        logging.info(f"clear_queue: clearing the existing queue of msq_id: {self.msq_id}")
         if libc.msgctl(self.msq_id, IPC_RMID, 0) == -1:
-            logging.error("Error in deleting the queue")
+            logging.error(f"Error in deleting the queue for msq_id: {self.msq_id}")

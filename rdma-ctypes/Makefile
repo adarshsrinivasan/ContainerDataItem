@@ -117,6 +117,32 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named run-server
+
+# Build rule for target.
+run-server: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 run-server
+.PHONY : run-server
+
+# fast build rule for target.
+run-server/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/run-server.dir/build.make CMakeFiles/run-server.dir/build
+.PHONY : run-server/fast
+
+#=============================================================================
+# Target rules for targets named run-client
+
+# Build rule for target.
+run-client: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 run-client
+.PHONY : run-client
+
+# fast build rule for target.
+run-client/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/run-client.dir/build.make CMakeFiles/run-client.dir/build
+.PHONY : run-client/fast
+
+#=============================================================================
 # Target rules for targets named server
 
 # Build rule for target.
@@ -263,6 +289,8 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... run-client"
+	@echo "... run-server"
 	@echo "... client"
 	@echo "... rdma_client_lib"
 	@echo "... rdma_server_lib"

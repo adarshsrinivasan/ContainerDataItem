@@ -18,6 +18,23 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -Ofast -ffast-math -funroll-loops -m
 #add_compile_options("-std=c++17")
 set(CMAKE_CXX_FLAGS "-O0  -ggdb")
 
+set(IP_ADDRESS "10.10.1.1")
+set(PORT 12345)
+
+set(CLIENT_SCRIPT ${CMAKE_SOURCE_DIR}/tests/client.sh)
+
+# Define a custom target to run the script
+add_custom_target(run-server
+        COMMAND /bin/bash -c "python rdma_py/server.py -l ${IP_ADDRESS} -p ${PORT}"
+        COMMENT "Starting the test server..."
+)
+
+# Define a custom target to run the script
+add_custom_target(run-client
+        COMMAND /bin/bash ${CLIENT_SCRIPT}
+        COMMENT "Starting the test client..."
+)
+
 find_library(IBVERBS_LIBRARY ibverbs HINTS /home/atr/local/lib)
 find_library(RDMACM_LIBRARY rdmacm HINTS /home/atr/local/lib)
 
