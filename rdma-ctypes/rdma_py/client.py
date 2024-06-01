@@ -33,14 +33,15 @@ if __name__ == '__main__':
     sockaddr = to_sockaddr(af, bind_addr, port)
     list_of_big_data = []
 
-    print("Generating data...")
-    for x in range(0, 10):
-        data = generate_big_data()
-        list_of_big_data.append(data)
-    print("Data generation completed!")
+    # print("Generating data...")
+    # for x in range(0, 10):
+    #
+    #     list_of_big_data.append(data)
+    # print("Data generation completed!")
 
     time.sleep(1)
-    for x in range(0, 5):
-        print(f"Sending data of size : {len(list_of_big_data[x])}")
-        start_client(sockaddr, list_of_big_data[x])
+    for x in range(0, 10):
+        data = generate_big_data()
+        print(f"Sending data of size : {len(data)}")
+        start_client(sockaddr, data)
     print("Done")

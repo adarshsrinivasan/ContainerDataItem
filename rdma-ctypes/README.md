@@ -1,4 +1,4 @@
-# RESULTS:
+# RESULTS: ( client side )
 
 ## 10KB
 Generating data...
@@ -134,7 +134,7 @@ log: 2024-06-01 04:15:34.988 Trying to connect to server at : 10.10.1.1 port: 12
 log: 2024-06-01 04:15:35.018 elapsed    0.30 ms (295100 ns)
 Done
 
-## 10MB:
+## 10MB: ( waiting for acknowledgement, hence the delay)
 
 Data generation completed!
 Sending data of size : 10485759
@@ -159,3 +159,110 @@ log: 2024-06-01 04:24:29.817 Trying to connect to server at : 10.10.1.1 port: 12
 log: 2024-06-01 04:24:29.918 elapsed   14.30 ms (14299020 ns)
 Done
 [100%] Built target run-client
+
+
+
+# RESULTS: (server side)
+
+# 100KB:
+
+log: 2024-06-01 04:38:28.069 SPINNING NEW THREAD
+log: 2024-06-01 04:38:40.915 elapsed    0.08 ms (77580 ns)
+Handle frame called with frame of size:  102399
+log: 2024-06-01 04:38:40.944 SPINNING NEW THREAD
+log: 2024-06-01 04:38:41.187 elapsed    0.08 ms (75380 ns)
+Handle frame called with frame of size:  102399
+log: 2024-06-01 04:38:41.208 SPINNING NEW THREAD
+log: 2024-06-01 04:38:41.451 elapsed    0.07 ms (67360 ns)
+Handle frame called with frame of size:  102399
+log: 2024-06-01 04:38:41.468 SPINNING NEW THREAD
+log: 2024-06-01 04:38:41.669 elapsed    0.07 ms (74180 ns)
+Handle frame called with frame of size:  102399
+log: 2024-06-01 04:38:41.685 SPINNING NEW THREAD
+log: 2024-06-01 04:38:41.892 elapsed    0.07 ms (73900 ns)
+Handle frame called with frame of size:  102399
+log: 2024-06-01 04:38:41.909 SPINNING NEW THREAD
+log: 2024-06-01 04:38:42.135 elapsed    0.07 ms (70160 ns)
+Handle frame called with frame of size:  102399
+log: 2024-06-01 04:38:42.160 SPINNING NEW THREAD
+log: 2024-06-01 04:38:42.371 elapsed    0.08 ms (79760 ns)
+Handle frame called with frame of size:  102399
+log: 2024-06-01 04:38:42.390 SPINNING NEW THREAD
+log: 2024-06-01 04:38:42.605 elapsed    0.07 ms (69080 ns)
+Handle frame called with frame of size:  102399
+log: 2024-06-01 04:38:42.625 SPINNING NEW THREAD
+log: 2024-06-01 04:38:42.840 elapsed    0.07 ms (71400 ns)
+Handle frame called with frame of size:  102399
+log: 2024-06-01 04:38:42.857 SPINNING NEW THREAD
+log: 2024-06-01 04:38:43.076 elapsed    0.07 ms (73400 ns)
+Handle frame called with frame of size:  102399
+log: 2024-06-01 04:38:43.093 SPINNING NEW THREAD
+
+# 1MB:
+
+log: 2024-06-01 04:37:41.413 elapsed    0.07 ms (70600 ns)
+Handle frame called with frame of size:  1048575
+log: 2024-06-01 04:37:41.450 SPINNING NEW THREAD
+log: 2024-06-01 04:37:43.817 elapsed    0.07 ms (68040 ns)
+Handle frame called with frame of size:  1048575
+log: 2024-06-01 04:37:43.845 SPINNING NEW THREAD
+log: 2024-06-01 04:37:45.771 elapsed    0.07 ms (68900 ns)
+Handle frame called with frame of size:  1048575
+log: 2024-06-01 04:37:45.791 SPINNING NEW THREAD
+log: 2024-06-01 04:37:47.722 elapsed    0.07 ms (68380 ns)
+Handle frame called with frame of size:  1048575
+log: 2024-06-01 04:37:47.740 SPINNING NEW THREAD
+log: 2024-06-01 04:37:49.608 elapsed    0.07 ms (71020 ns)
+Handle frame called with frame of size:  1048575
+log: 2024-06-01 04:37:49.626 SPINNING NEW THREAD
+log: 2024-06-01 04:37:51.442 elapsed    0.07 ms (67880 ns)
+Handle frame called with frame of size:  1048575
+log: 2024-06-01 04:37:51.459 SPINNING NEW THREAD
+log: 2024-06-01 04:37:53.270 elapsed    0.07 ms (66100 ns)
+Handle frame called with frame of size:  1048575
+log: 2024-06-01 04:37:53.288 SPINNING NEW THREAD
+log: 2024-06-01 04:37:55.100 elapsed    0.04 ms (38820 ns)
+Handle frame called with frame of size:  1048575
+log: 2024-06-01 04:37:55.117 SPINNING NEW THREAD
+log: 2024-06-01 04:37:56.911 elapsed    0.07 ms (65600 ns)
+Handle frame called with frame of size:  1048575
+log: 2024-06-01 04:37:56.929 SPINNING NEW THREAD
+log: 2024-06-01 04:37:58.732 elapsed    0.07 ms (65220 ns)
+Handle frame called with frame of size:  1048575
+log: 2024-06-01 04:37:58.749 SPINNING NEW THREAD
+
+
+# 10MB:
+
+log: 2024-06-01 04:33:57.364 SPINNING NEW THREAD
+log: 2024-06-01 04:34:19.738 elapsed    0.08 ms (78160 ns)
+log: 2024-06-01 04:34:19.778 SPINNING NEW THREAD
+Handle frame called with frame of size:  10485759
+log: 2024-06-01 04:34:39.426 elapsed    0.07 ms (68480 ns)
+log: 2024-06-01 04:34:39.464 SPINNING NEW THREAD
+Handle frame called with frame of size:  10485759
+log: 2024-06-01 04:34:59.035 elapsed    0.07 ms (67680 ns)
+log: 2024-06-01 04:34:59.077 SPINNING NEW THREAD
+Handle frame called with frame of size:  10485759
+log: 2024-06-01 04:35:17.572 elapsed    0.07 ms (67440 ns)
+log: 2024-06-01 04:35:17.609 SPINNING NEW THREAD
+Handle frame called with frame of size:  10485759
+log: 2024-06-01 04:35:35.950 elapsed    0.07 ms (67960 ns)
+log: 2024-06-01 04:35:35.988 SPINNING NEW THREAD
+Handle frame called with frame of size:  10485759
+log: 2024-06-01 04:35:55.030 elapsed    0.07 ms (72820 ns)
+log: 2024-06-01 04:35:55.090 SPINNING NEW THREAD
+Handle frame called with frame of size:  10485759
+log: 2024-06-01 04:36:13.462 elapsed    0.07 ms (65860 ns)
+log: 2024-06-01 04:36:13.500 SPINNING NEW THREAD
+Handle frame called with frame of size:  10485759
+log: 2024-06-01 04:36:31.820 elapsed    0.07 ms (71860 ns)
+log: 2024-06-01 04:36:31.858 SPINNING NEW THREAD
+Handle frame called with frame of size:  10485759
+log: 2024-06-01 04:36:50.140 elapsed    0.07 ms (67880 ns)
+log: 2024-06-01 04:36:50.177 SPINNING NEW THREAD
+Handle frame called with frame of size:  10485759
+log: 2024-06-01 04:37:08.517 elapsed    0.07 ms (72020 ns)
+log: 2024-06-01 04:37:08.554 SPINNING NEW THREAD
+Handle frame called with frame of size:  10485759
+

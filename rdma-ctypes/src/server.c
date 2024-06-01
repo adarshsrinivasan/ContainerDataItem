@@ -257,6 +257,8 @@ void* wait_for_event(void *args) {
     struct frame_msg *sbuf = arguments->sbuf;
     struct rdma_cm_event *received_event = NULL;
 
+    struct timespec start, end;
+
     while (rdma_get_cm_event(cm_event_channel, &received_event) == 0) {
         /* Initialize the received event */
         struct rdma_cm_event cm_event;
@@ -285,13 +287,14 @@ void* wait_for_event(void *args) {
                 // wait for receiving the frame details
                 process_work_completion_events(_client_struct->comp_channel, &wc, 1);
 
+                clock_gettime(CLOCK_MONOTONIC_RAW, &start);
                 read_message_buffer(frame, _client_struct, client_buffer);
 
                 int cnt = 0;
+                usleep(1);
                 while (strcmp(frame->memory_region, "") == 0 && cnt < 3) {
                     read_message_buffer(frame, _client_struct, client_buffer);
                     cnt += 1;
-                    usleep(1);
                 }
                 if (strcmp(frame->memory_region, "") == 0) {
                     error("RDMA read returns empty data. Disconnecting Server \n");
@@ -299,6 +302,10 @@ void* wait_for_event(void *args) {
                     disconnect_server(_client_struct);
                     pthread_exit(NULL);
                 }
+                clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+                const uint64_t ns = (end.tv_sec * 1000000000 + end.tv_nsec) - (start.tv_sec * 1000000000 + start.tv_nsec);
+                info("elapsed %7.02f ms (%lu ns)\n ", ns / 1000000.0, ns);
+
                 received_frame = (char *) malloc ( DATA_SIZE );
                 strcpy(received_frame, frame->memory_region);
                 post_send_ACK(_client_struct, server_buffer);
