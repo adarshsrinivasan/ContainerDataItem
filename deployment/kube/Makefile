@@ -9,6 +9,9 @@ deploy:
 	cd detector && make deploy
 	cd combiner && make deploy
 	cd test-pod && make deploy
+	cd workflow_worker && make deploy
+	cd workflow_scheduler && make deploy
+	cd workflow_controller && make deploy
 
 delete:
 	cd test-pod && make delete || true
@@ -21,3 +24,6 @@ delete:
 	cd postgres && make delete || true
 	cd prometheus && make delete || true
 	cd redis && make delete || true
+	cd workflow_worker && make delete || true
+	cd workflow_scheduler && make delete || true
+	cd workflow_controller && make delete || true

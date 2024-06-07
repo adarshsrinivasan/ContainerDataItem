@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: workflow-controller-service
+  labels:
+    app: workflow-controller
+spec:
+  ports:
+    - protocol: "TCP"
+      port: 5002
+      targetPort: 5002
+  selector:
+    app: workflow-controller

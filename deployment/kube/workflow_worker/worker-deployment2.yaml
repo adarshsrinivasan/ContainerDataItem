@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workflow-worker-2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: workflow-worker-2
+  template:
+    metadata:
+      labels:
+        app: workflow-worker-2
+    spec:
+      securityContext:
+        runAsUser: 993
+        runAsGroup: 20
+      hostIPC: True
+      containers:
+      - name: workflow-worker
+        image: tarun1997/workflow-worker:latest
+        ports:
+        - containerPort: 5004
+        env:
+        - name: NODE_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: CONTAINER_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: CONTAINER_IP
+          value: "workflow-worker-service-2"
+        - name: CONTAINER_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: PROCESS_ID
+          value: "zxp87a83-8f10-49d7-9133-05bc592a51l4"
+        - name: CDI_ID
+          value: "980519e2-7221-4387-aa1a-69706fd61826"
+        - name: CDI_KEY
+          value: "52469" 
+        - name: RPC_HOST
+          value: "0.0.0.0"
+        - name: RPC_PORT
+          value: "5004"
+        - name: CONTROLLER_HOST
+          value: "controller-service"
+        - name: CONTROLLER_PORT
+          value: "50000"
+        - name: QUEUE
+          value: "worker-queue-2"

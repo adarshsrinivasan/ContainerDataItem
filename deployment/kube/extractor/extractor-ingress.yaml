@@ -3,7 +3,7 @@ kind: Ingress
 metadata:
   name: extractor-ingress
   annotations:
-    # use the shared ingress-nginx
+    # Use the shared ingress-nginx
     kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/proxy-body-size: 16m
     nginx.ingress.kubernetes.io/rewrite-target: /$2
@@ -21,3 +21,10 @@ spec:
                 name: extractor-service
                 port:
                   number: 50000
+          - path: /orchestrator(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: workflow-controller-service
+                port:
+                  number: 5002

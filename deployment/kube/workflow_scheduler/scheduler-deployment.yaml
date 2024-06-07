@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workflow-scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: workflow-scheduler
+  template:
+    metadata:
+      labels:
+        app: workflow-scheduler
+    spec:
+      securityContext:
+        runAsUser: 994
+        runAsGroup: 21
+      hostIPC: True
+      containers:
+      - name: workflow-scheduler
+        image: tarun1997/workflow-scheduler:latest
+        ports:
+        - containerPort: 5001
+        env:
+        - name: NODE_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: CONTAINER_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: CONTAINER_IP
+          value: "workflow-scheduler-service"
+        - name: CONTAINER_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: PROCESS_ID
+          value: "kxd87b93-8f00-59d8-9133-05be592a59t4"
+        - name: RPC_HOST
+          value: "0.0.0.0"
+        - name: RPC_PORT
+          value: "5001"
+        - name: CONTROLLER_HOST
+          value: "controller-service"
+        - name: CONTROLLER_PORT
+          value: "50000"
+        - name: BEST_CASE
+          value: "False"
