@@ -1,6 +1,10 @@
+import logging
+
 import grpc
 
-from srvs.app_process.rpc_api import controller_api_pb2_grpc as pb2_grpc, controller_api_pb2 as pb2
+from srvs.common.rpc_api import controller_api_pb2_grpc as pb2_grpc, controller_api_pb2 as pb2
+
+
 class ControllerClient(object):
     def __init__(self, host, port):
         self.host = host
@@ -13,10 +17,24 @@ class ControllerClient(object):
         # bind the client and the server
         self.stub = pb2_grpc.ControllerServiceStub(self.channel)
 
-    def RegisterMinion(self, node_ip, rpc_ip, rpc_port):
-        message = pb2.RegisterMinionRequest(node_ip=node_ip, rpc_ip=rpc_ip, rpc_port=rpc_port)
+    def RegisterMinion(self, name, namespace, node_ip, rpc_ip, rpc_port):
+        logging.info(f"RegisterMinion({self.host}:{self.server_port}): Sending request")
+        message = pb2.RegisterMinionRequest(name=name, namespace=namespace, node_ip=node_ip, rpc_ip=rpc_ip,
+                                            rpc_port=rpc_port)
         return self.stub.RegisterMinion(message)
 
     def UnregisterMinion(self, node_ip):
+        logging.info(f"UnregisterMinion({self.host}:{self.server_port}): Sending request")
         message = pb2.UnregisterMinionRequest(node_ip=node_ip)
         return self.stub.UnregisterMinion(message)
+
+
+def register_with_controller(name, namespace, node_ip, host, port, controller_host, controller_port):
+    logging.info(f"Registering with controller on {controller_host}:{controller_port}")
+    controller_client = ControllerClient(host=controller_host, port=controller_port)
+    response = controller_client.RegisterMinion(name=name, namespace=namespace, node_ip=node_ip, rpc_ip=host,
+                                                rpc_port=port)
+    if response.err != "":
+        raise Exception(
+            f"Exception while registering minion with controller on {controller_host}:{controller_port}: {response.err}")
+    logging.info(f"Successfully Registered with controller on {controller_host}:{controller_port}!")

@@ -10,27 +10,34 @@ service ControllerService {
   rpc UnregisterMinion(UnregisterMinionRequest) returns (UnregisterMinionResponse) {}
 
   rpc CreateCDIs(CreateCDIsRequest) returns (CreateCDIsResponse) {}
+  rpc GetCDIsByProcessID(GetCDIsByProcessIDRequest) returns (GetCDIsByProcessIDResponse) {}
   rpc TransferCDIs(TransferCDIsRequest) returns (TransferCDIsResponse) {}
   rpc DeleteCDIs(DeleteCDIsRequest) returns (DeleteCDIsResponse) {}
 }
 
-message ControllerCdiConfig {
+message CdiConfig {
   string process_id = 1;
-  string app_id = 2;
-  string app_name = 3;
-  string cdi_id = 4;
-  int32 shm_key = 5;
-  int32 shm_segsz = 6;
-  int32 shm_mode = 7;
-  int32 shm_uid = 8;
-  int32 shm_gid = 9;
+  string process_name = 2;
+  string app_id = 3;
+  string app_name = 4;
+  string cdi_id = 5;
+  int32 cdi_key = 6;
+  int32 cdi_size_bytes = 7;
+  int32 cdi_access_mode = 8;
+  int32 uid = 9;
+  int32 gid = 10;
+  string payload = 11;
 }
 
 message RegisterProcessRequest {
   string id = 1;
-  string node_ip = 2;
-  string rpc_ip = 3;
-  string rpc_port = 4;
+  string name = 2;
+  string namespace = 3;
+  string node_ip = 4;
+  string rpc_ip = 5;
+  string rpc_port = 6;
+  string uid = 7;
+  string gid = 8;
 }
 
 message RegisterProcessResponse {
@@ -46,9 +53,11 @@ message UnregisterProcessResponse {
 }
 
 message RegisterMinionRequest {
-  string node_ip = 1;
-  string rpc_ip = 2;
-  string rpc_port = 3;
+  string name = 1;
+  string namespace = 2;
+  string node_ip = 3;
+  string rpc_ip = 4;
+  string rpc_port = 5;
 }
 
 message RegisterMinionResponse {
@@ -65,17 +74,27 @@ message UnregisterMinionResponse {
 
 message CreateCDIsRequest {
   string id = 1;
-  repeated ControllerCdiConfig cdi_configs = 2;
+  repeated CdiConfig cdi_configs = 2;
 }
 
 message CreateCDIsResponse {
   string err = 1;
 }
 
+message GetCDIsByProcessIDRequest {
+  string id = 1;
+}
+
+message GetCDIsByProcessIDResponse {
+  repeated CdiConfig cdi_configs = 1;
+  string err = 2;
+}
+
 message TransferCDIsRequest {
   string id = 1;
   string transfer_id = 2;
-  repeated ControllerCdiConfig cdi_configs = 3;
+  string transfer_mode = 3;
+  repeated CdiConfig cdi_configs = 4;
 }
 
 message TransferCDIsResponse {
@@ -84,7 +103,7 @@ message TransferCDIsResponse {
 
 message DeleteCDIsRequest {
   string id = 1;
-  repeated ControllerCdiConfig cdi_configs = 3;
+  repeated CdiConfig cdi_configs = 3;
 }
 
 message DeleteCDIsResponse {

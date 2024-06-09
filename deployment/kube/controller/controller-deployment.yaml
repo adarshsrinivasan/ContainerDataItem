@@ -1,0 +1,54 @@
+apiVersion: apps/v1 #  for k8s versions before 1.9.0 use apps/v1beta2  and before 1.8.0 use extensions/v1beta1
+kind: Deployment
+metadata:
+  name: controller
+spec:
+  selector:
+    matchLabels:
+      app: controller
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: controller
+    spec:
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 21
+      containers:
+        - name: controller
+          image: adarshzededa/cdi-controller:latest
+          imagePullPolicy: Always
+          env:
+            - name: RPC_HOST
+              value: "0.0.0.0"
+            - name: RPC_PORT
+              value: "50000"
+            - name: SQL_HOST
+              value: "postgres"
+            - name: SQL_PORT
+              value: "5432"
+            - name: SQL_USER
+              value: "admin"
+            - name: SQL_PASSWORD
+              value: "admin"
+            - name: SQL_DB
+              value: "cdi"
+            - name: DEPLOY_PLATFORM
+              value: "kubernetes"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 400Mi
+          ports:
+            - containerPort: 50000
+          readinessProbe:
+            grpc:
+              port: 50000
+            periodSeconds: 1
+            initialDelaySeconds: 10
+          livenessProbe:
+            grpc:
+              port: 50000
+            initialDelaySeconds: 10
+            periodSeconds: 60

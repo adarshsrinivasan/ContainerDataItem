@@ -1,6 +1,8 @@
+import logging
+
 import grpc
-import srvs.controller.rpc_api.process_api_pb2_grpc as pb2_grpc
-import srvs.controller.rpc_api.process_api_pb2 as pb2
+import srvs.common.rpc_api.process_api_pb2_grpc as pb2_grpc
+import srvs.common.rpc_api.process_api_pb2 as pb2
 
 
 class ProcessClient(object):
@@ -16,6 +18,7 @@ class ProcessClient(object):
         self.stub = pb2_grpc.ProcessServiceStub(self.channel)
 
     def NotifyCDIsAccess(self, cdi_controller_table_list):
+        logging.info(f"NotifyCDIsAccess({self.host}:{self.server_port}): Sending request")
         request_list = []
         for cdi_controller_table in cdi_controller_table_list:
             request_list.append(cdi_controller_table.as_proto_cdi_config())

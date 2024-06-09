@@ -11,18 +11,19 @@ class SHM_access:
         self.shm_id = shm_id
         self.size = size
         self.__myshm = SharedMemory()
-        self.__myshm.shm_id = self.shm_id
         self.__ptr = None
 
     def __shm_check_access(self, uid, gid):
+        self.__myshm.shm_id = self.shm_id
         try:
             shmid_ds = self.__myshm.stat()
         except Exception as err:
             logging.error(f"Stat Error: {err}")
             return
-        return shmid_ds.contents.shm_perm.uid == uid and shmid_ds.contents.shm_perm.gid == gid
+        return (shmid_ds.contents.shm_perm.uid == uid and shmid_ds.contents.shm_perm.gid == gid) or (shmid_ds.contents.shm_perm.cuid == uid and shmid_ds.contents.shm_perm.cgid == gid)
 
     def __wait_for_access(self, timeout_seconds=1000):
+        self.__myshm.shm_id = self.shm_id
         # logging.info(f"checking if current user uid: {os.getuid()}, gid: {os.getgid()} has access on the shared memory with shmid: {self.shm_id}")
         start_time = time.time()
 
@@ -35,37 +36,43 @@ class SHM_access:
         return
 
     def __attach(self):
+        self.__myshm.shm_id = self.shm_id
         self.__wait_for_access()
         self.__ptr = self.__myshm.attach()
 
     def __detach(self):
+        self.__myshm.shm_id = self.shm_id
         self.__wait_for_access()
         self.__myshm.detach()
         self.__ptr = None
 
     def write_data(self, data: str):
+        self.__myshm.shm_id = self.shm_id
         self.__attach()
         self.__myshm.write_data(data)
         self.__detach()
-        logging.info(f"shm_write_data: wrote '{data}' to shared memory with shm_id: {self.shm_id}")
+        logging.info(f"shm_write_data: wrote data to shared memory with shm_id: {self.shm_id}")
 
     def read_data(self, length=0) -> str:
+        self.__myshm.shm_id = self.shm_id
         if length == 0:
             length = self.size
         self.__attach()
         data = self.__myshm.read_data(length)
         self.__detach()
         if len(data) > 0:
-            logging.info(f"shm_read_data: read '{data}' from shared memory with shm_id: {self.shm_id}")
+            logging.info(f"shm_read_data: read data from shared memory with shm_id: {self.shm_id}")
         return data
 
     def clear_data(self):
+        self.__myshm.shm_id = self.shm_id
         self.__attach()
         self.__myshm.clear_data()
         self.__detach()
         # logging.info(f"shm_read_data: cleared data of shared memory with shm_id: {self.shm_id}")
 
     def change_owner(self, uid, gid):
+        self.__myshm.shm_id = self.shm_id
         try:
             shmid_ds = self.__myshm.stat()
         except Exception as err:

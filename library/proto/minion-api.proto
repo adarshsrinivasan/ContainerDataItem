@@ -1,6 +1,8 @@
 syntax = "proto3";
 package proto;
 
+import "controller-api.proto";
+
 service MinionControllerService {
     rpc CreateCDIs(MinionCreateCDIsRequest) returns (MinionCreateCDIsResponse) {}
     rpc UpdateCDIs(MinionUpdateCDIsRequest) returns (MinionUpdateCDIsResponse) {}
@@ -8,42 +10,27 @@ service MinionControllerService {
     rpc DeleteCDIs(MinionDeleteCDIsRequest) returns (MinionDeleteCDIsResponse) {}
 }
 
-message MinionCdiConfig {
-    string app_id = 1;
-    string app_name = 2;
-    string cdi_id = 3;
-    int32 shm_key = 4;
-    int32 shm_shmid = 5;
-    int32 shm_segsz = 6;
-    int32 shm_mode = 7;
-    int32 shm_uid = 8;
-    int32 shm_gid = 9;
-    string payload = 10;
-}
-
 message MinionCreateCDIsRequest {
-    repeated MinionCdiConfig cdi_configs = 1;
+    repeated CdiConfig cdi_configs = 1;
 }
 
 message MinionCreateCDIsResponse {
-    repeated MinionCdiConfig cdi_configs = 1;
-    string err = 2;
+    string err = 1;
 
 }
 
 message MinionUpdateCDIsRequest {
-    repeated MinionCdiConfig cdi_configs = 1;
+    repeated CdiConfig cdi_configs = 1;
 }
 
 message MinionUpdateCDIsResponse {
-    repeated MinionCdiConfig cdi_configs = 1;
-    string err = 2;
+    string err = 1;
 }
 
 message MinionTransferAndDeleteCDIsRequest {
     string transfer_host = 1;
     string transfer_port = 2;
-    repeated MinionCdiConfig cdi_configs = 3;
+    repeated CdiConfig cdi_configs = 3;
 }
 
 message MinionTransferAndDeleteCDIsResponse {
@@ -51,7 +38,7 @@ message MinionTransferAndDeleteCDIsResponse {
 }
 
 message MinionDeleteCDIsRequest {
-    repeated MinionCdiConfig cdi_configs = 1;
+    repeated CdiConfig cdi_configs = 1;
 }
 
 message MinionDeleteCDIsResponse {

@@ -3,8 +3,8 @@ import logging
 import os
 import sys
 
-from ctypes import c_ushort, c_int, c_uint, c_ulong, c_size_t, c_void_p, string_at, c_char, c_long, cast, c_char_p
-from ctypes import CDLL, POINTER, Structure, pointer, create_string_buffer, memmove
+from ctypes import c_ushort, c_int, c_uint, c_size_t, c_void_p, string_at, c_char, c_long, c_char_p
+from ctypes import CDLL, POINTER, Structure, create_string_buffer
 
 from library.common.constants import SHM_DLL_DIR_PATH_ENV
 from library.common.utils import getenv_with_default
@@ -106,7 +106,7 @@ lib.Read.restype = None
 
 
 class SharedMemory:
-    def __init__(self, size=0, shm_id=-1, key=-1, shm_mode=666, uid=0, gid=0) -> None:
+    def __init__(self, size=0, shm_id=-1, key=-1, shm_mode=666, uid=0, gid=0, create_shm=False) -> None:
         self.size = size
         self.shm_id = shm_id
         self.key = key
@@ -114,49 +114,56 @@ class SharedMemory:
         self.uid = uid
         self.gid = gid
         self.at_ptr = None
+        self.create_shm = create_shm
 
-    def create(self, print_stat=False):
-        self.shm_id = lib.Create(self.key, self.size, IPC_CREAT | self.shm_mode)
+    def __populate_shm_id_if_empty(self):
+        if self.shm_id == -1:
+            # logging.info(f"__populate_shm_id_if_empty: {self.key}-{type(self.key)} {self.size}-{type(self.size)} {self.shm_mode}-{type(self.shm_mode)}")
+            if self.create_shm:
+                logging.info(f"__populate_shm_id_if_empty: Creating new SHM for key: {self.key}")
+                self.shm_id = lib.Create(self.key, self.size, IPC_CREAT | self.shm_mode)
+            else:
+                logging.info(f"__populate_shm_id_if_empty: Attempting to attach to SHM with key: {self.key}")
+                self.shm_id = lib.Create(self.key, self.size, self.shm_mode)
         if self.shm_id < 0:
-            err = f"Error: exception while create operation. shm_id: {self.shm_id}"
+            err = f"Error: exception while create/access operation. shm_id: {self.shm_id}"
             logging.error(f"{err}\n")
             raise Exception(err)
         assert self.shm_id >= 0
 
+    def print_stat(self):
+        self.__populate_shm_id_if_empty()
         try:
             shmid_ds = self.stat()
         except Exception as err:
             logging.error(f"Stat Error: {err}")
-            return
+            return None
 
+        logging.info(f"\n")
+        logging.info(f"Key: {self.key}")
+        logging.info(f"SHMID: {self.shm_id}")
+        logging.info(f"Access UID: {shmid_ds.contents.shm_perm.uid}")
+        logging.info(f"Access GID: {shmid_ds.contents.shm_perm.gid}")
+        logging.info(f"Creator UID: {shmid_ds.contents.shm_perm.cuid}")
+        logging.info(f"Creator GID: {shmid_ds.contents.shm_perm.cgid}")
+        logging.info(f"Access Mode: {shmid_ds.contents.shm_perm.mode}")
+        logging.info(f"Size (Bytes): {shmid_ds.contents.shm_segsz}")
+        logging.info(f"Last Operator PID: {shmid_ds.contents.shm_lpid}")
+        logging.info(f"Creator PID: {shmid_ds.contents.shm_cpid}")
+        logging.info(f"Number of attached Processes: {shmid_ds.contents.shm_nattch}")
+        logging.info(f"Last attach time: {shmid_ds.contents.shm_atime}")
+        logging.info(f"Last detach time: {shmid_ds.contents.shm_dtime}")
+        logging.info(f"Last change time: {shmid_ds.contents.shm_ctime}")
+        logging.info(f"\n")
+
+    def create(self, print_stat=False):
+        self.__populate_shm_id_if_empty()  # This will also create the SharedMemory.
         if print_stat:
-            logging.info("\nCreate: shmid_ds Information:")
-            logging.info(f"key: {self.key}")
-            logging.info(f"shmid: {self.shm_id}")
-            logging.info(f"Mode: {shmid_ds.contents.shm_perm.mode}")
-            logging.info(f"UID: {shmid_ds.contents.shm_perm.uid}")
-            logging.info(f"GID: {shmid_ds.contents.shm_perm.gid}")
-            logging.info(f"Size: {shmid_ds.contents.shm_segsz} bytes")
-            logging.info(f"Last attach time: {shmid_ds.contents.shm_atime}")
-            logging.info(f"Last detach time: {shmid_ds.contents.shm_dtime}")
-            logging.info(f"Last change time: {shmid_ds.contents.shm_ctime}")
-            logging.info(f"Number of attaches: {shmid_ds.contents.shm_nattch}\n")
-
+            self.print_stat()
         return self.shm_id
 
-    def load_with_shmid(self):
-        try:
-            shmid_ds = self.stat()
-        except Exception as err:
-            logging.error(f"Stat Error: {err}")
-            return
-
-        self.size = shmid_ds.contents.shm_segsz
-        self.shm_mode = shmid_ds.contents.shm_perm.mode
-        self.uid = shmid_ds.contents.shm_perm.uid
-        self.gid = shmid_ds.contents.shm_perm.gid
-
     def attach(self):
+        self.__populate_shm_id_if_empty()
         self.at_ptr = lib.Attach(self.shm_id)
         if self.at_ptr is None:
             err = f"Error: exception while attach operation. at_ptr: None"
@@ -165,6 +172,7 @@ class SharedMemory:
         return self.at_ptr
 
     def detach(self):
+        self.__populate_shm_id_if_empty()
         if self.at_ptr is not None:
             ret = lib.Detach(self.at_ptr)
             if self.at_ptr is None:
@@ -176,6 +184,7 @@ class SharedMemory:
             raise Exception("attach pointer not set")
 
     def stat(self):
+        self.__populate_shm_id_if_empty()
         stat_res = lib.Stat(self.shm_id)
         if stat_res is None:
             err = f"Error: exception while stat operation. stat_res: None"
@@ -184,7 +193,8 @@ class SharedMemory:
         stat_res.contents.shm_perm.mode = int(str(oct(stat_res.contents.shm_perm.mode)).removeprefix('0o'))
         return stat_res
 
-    def set(self, uid: int, gid: int, shm_mode: int):
+    def set(self, uid: int, gid: int, shm_mode: int, print_stat=False):
+        self.__populate_shm_id_if_empty()
         self.uid = uid
         self.gid = gid
         self.shm_mode = int("{}".format(shm_mode), 8)
@@ -194,23 +204,8 @@ class SharedMemory:
             logging.error(f"{err}\n")
             raise Exception(err)
 
-        try:
-            shmid_ds = self.stat()
-        except Exception as err:
-            logging.error(f"Stat Error: {err}")
-            return
-
-        logging.info("\nSet: shmid_ds Information:")
-        logging.info(f"key: {self.key}")
-        logging.info(f"shmid: {self.shm_id}")
-        logging.info(f"Mode: {shmid_ds.contents.shm_perm.mode}")
-        logging.info(f"UID: {shmid_ds.contents.shm_perm.uid}")
-        logging.info(f"GID: {shmid_ds.contents.shm_perm.gid}")
-        logging.info(f"Size: {shmid_ds.contents.shm_segsz} bytes")
-        logging.info(f"Last attach time: {shmid_ds.contents.shm_atime}")
-        logging.info(f"Last detach time: {shmid_ds.contents.shm_dtime}")
-        logging.info(f"Last change time: {shmid_ds.contents.shm_ctime}")
-        logging.info(f"Number of attaches: {shmid_ds.contents.shm_nattch}\n")
+        if print_stat:
+            self.print_stat()
 
     def write_data(self, data: str):
         assert self.at_ptr is not None
@@ -223,6 +218,7 @@ class SharedMemory:
         return data
 
     def clear_data(self):
+        self.__populate_shm_id_if_empty()
         assert self.at_ptr is not None
         lib.Clear(self.at_ptr, self.size)
 
@@ -230,6 +226,7 @@ class SharedMemory:
         return len(self.read_data(self.size)) == 0
 
     def remove(self):
+        self.__populate_shm_id_if_empty()
         try:
             self.detach()
         except Exception as err:
@@ -244,111 +241,69 @@ class SharedMemory:
         self.shm_id = -1
 
 
-def Test():
+def SHM_Test():
     data = "testdata1test"
-    myshm = SharedMemory(size=SHM_SIZE, key=SHM_KEY, shm_mode=644)
-    shm_id = -1
+    myshm = SharedMemory(size=SHM_SIZE, key=SHM_KEY, shm_mode=644, create_shm=True)
     try:
-        shm_id = myshm.create()
+        myshm.create()
     except Exception as err:
-        logging.error(f"Create Error: {err}")
-        return
+        raise Exception(f"Create Error1: {err}")
+
+    myshm = SharedMemory(size=SHM_SIZE, key=SHM_KEY, shm_mode=644, create_shm=False)
+    try:
+        myshm.create()
+    except Exception as err:
+        raise Exception(f"Create Error2: {err}")
 
     try:
         myshm.attach()
     except Exception as err:
-        print(f"Attach Error: {err}")
-        return
+        raise Exception(f"Attach Error: {err}")
+
+    myshm.write_data(data)
+    logging.info(f"Data: {myshm.read_data(len(data))}")
+    logging.info(f"IsEmpty: {myshm.is_empty()}")
+    myshm.clear_data()
+    logging.info(f"Data after clear: {myshm.read_data(len(data))}")
+    logging.info(f"IsEmpty: {myshm.is_empty()}")
+
+    myshm.print_stat()
 
     try:
         shmid_ds = myshm.stat()
     except Exception as err:
-        print(f"Stat Error: {err}")
+        logging.error(f"Stat Error: {err}")
         return
-
-    print("\nshmid_ds Information:")
-    print(f"key: {SHM_KEY}")
-    print(f"shmid: {shm_id}")
-    print(f"Mode: {shmid_ds.contents.shm_perm.mode}")
-    print(f"UID: {shmid_ds.contents.shm_perm.uid}")
-    print(f"GID: {shmid_ds.contents.shm_perm.gid}")
-    print(f"Size: {shmid_ds.contents.shm_segsz} bytes")
-    print(f"Last attach time: {shmid_ds.contents.shm_atime}")
-    print(f"Last detach time: {shmid_ds.contents.shm_dtime}")
-    print(f"Last change time: {shmid_ds.contents.shm_ctime}")
-    print(f"Number of attaches: {shmid_ds.contents.shm_nattch}\n")
-
-    myshm.write_data(data)
-    print(f"Data: {myshm.read_data(len(data))}")
-    print(f"IsEmpty: {myshm.is_empty()}")
-    myshm.clear_data()
-    print(f"Data after clear: {myshm.read_data(len(data))}")
-    print(f"IsEmpty: {myshm.is_empty()}")
 
     try:
         myshm.set(0, 0, 666)
     except Exception as err:
-        print(f"Set Error: {err}")
-        return
+        raise Exception(f"Set Error: {err}")
 
-    try:
-        shmid_ds_new1 = myshm.stat()
-    except Exception as err:
-        print(f"Stat Error: {err}")
-        return
-
-    print("\nshmid_ds Information:")
-    print(f"key: {SHM_KEY}")
-    print(f"shmid: {shm_id}")
-    print(f"Mode: {shmid_ds_new1.contents.shm_perm.mode}")
-    print(f"UID: {shmid_ds_new1.contents.shm_perm.uid}")
-    print(f"GID: {shmid_ds_new1.contents.shm_perm.gid}")
-    print(f"Size: {shmid_ds_new1.contents.shm_segsz} bytes")
-    print(f"Last attach time: {shmid_ds_new1.contents.shm_atime}")
-    print(f"Last detach time: {shmid_ds_new1.contents.shm_dtime}")
-    print(f"Last change time: {shmid_ds_new1.contents.shm_ctime}")
-    print(f"Number of attaches: {shmid_ds_new1.contents.shm_nattch}\n")
+    myshm.print_stat()
 
     try:
         myshm.set(shmid_ds.contents.shm_perm.uid, shmid_ds.contents.shm_perm.gid, shmid_ds.contents.shm_perm.mode)
     except Exception as err:
-        print(f"Set Error: {err}")
-        return
+        raise Exception(f"Set Error: {err}")
 
-    try:
-        shmid_ds_new2 = myshm.stat()
-    except Exception as err:
-        print(f"Stat Error: {err}")
-        return
-
-    print("\nshmid_ds Information:")
-    print(f"key: {SHM_KEY}")
-    print(f"shmid: {shm_id}")
-    print(f"Mode: {shmid_ds_new2.contents.shm_perm.mode}")
-    print(f"UID: {shmid_ds_new2.contents.shm_perm.uid}")
-    print(f"GID: {shmid_ds_new2.contents.shm_perm.gid}")
-    print(f"Size: {shmid_ds_new2.contents.shm_segsz} bytes")
-    print(f"Last attach time: {shmid_ds_new2.contents.shm_atime}")
-    print(f"Last detach time: {shmid_ds_new2.contents.shm_dtime}")
-    print(f"Last change time: {shmid_ds_new2.contents.shm_ctime}")
-    print(f"Number of attaches: {shmid_ds_new2.contents.shm_nattch}\n")
+    myshm.print_stat()
 
     try:
         myshm.detach()
     except Exception as err:
-        print(f"Detach Error: {err}")
-        return
+        raise Exception(f"Detach Error: {err}")
 
-    print("detached")
+    logging.info("detached")
 
     try:
         myshm.remove()
     except Exception as err:
-        print(f"Remove Error: {err}")
-        return
+        raise Exception(f"Remove Error: {err}")
 
-    print("removed")
+    logging.info("removed")
 
 
 if __name__ == '__main__':
-    Test()
+    logging.basicConfig(level=logging.INFO)
+    SHM_Test()

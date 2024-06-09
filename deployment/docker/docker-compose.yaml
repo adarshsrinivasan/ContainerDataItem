@@ -33,6 +33,17 @@ services:
     networks:
       cdi-network: { }
 
+  cache:
+    image: redis:6.2-alpine
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning --requirepass supersecurepassword
+    volumes:
+      - redis-data:/data
+    networks:
+      cdi-network: { }
+
   controller:
     image: adarshzededa/cdi-controller:latest
     restart: always
@@ -52,8 +63,9 @@ services:
       SQL_USER: admin
       SQL_PASSWORD: admin
       SQL_DB: cdi
-      HOST: "0.0.0.0"
-      PORT: 50000
+      RPC_HOST: "0.0.0.0"
+      RPC_PORT: 50000
+      DEPLOY_PLATFORM: "docker"
     user: "999:21"
     networks:
       cdi-network: { }
@@ -77,43 +89,157 @@ services:
       SQL_USER: admin
       SQL_PASSWORD: admin
       SQL_DB: cdi
-      HOST: "0.0.0.0"
-      PORT: 50001
+      RPC_HOST: "0.0.0.0"
+      RPC_PORT: 50001
       CONTROLLER_HOST: controller
       CONTROLLER_PORT: 50000
-      NODE_IP: "0.0.0.0"
-    user: "999:21"
+      NODE_IP: "minion"
+      CONTAINER_NAME: "minion"
+      CONTAINER_IP: "minion"
+      CONTAINER_NAMESPACE: "default"
+    user: "998:22"
     networks:
       cdi-network: { }
 
-  app_process:
-    image: adarshzededa/cdi-app-process:latest
+  extractor:
+    image: adarshzededa/cdi-extractor:latest
     restart: always
     ports:
-      - "50002:50002"
+      - "50011:50011"
+      - "50012:50012"
     ipc: host
     depends_on:
-      - controller
       - minion
+      - cache
     build:
       context: ../../
-      dockerfile: srvs/app_process/Dockerfile
+      dockerfile: srvs/extractor/Dockerfile
       args:
-        - service=app_process
+        - service=extractor
     environment:
-      HOST: "0.0.0.0"
-      PORT: 50002
+      NODE_IP: "minion"
+      PROCESS_ID: "b8269e66-e6d4-4b66-8f1e-acd9715372c9"
+      CONTAINER_NAME: "extractor"
+      CONTAINER_IP: "extractor"
+      CONTAINER_NAMESPACE: "default"
+      RPC_HOST: "0.0.0.0"
+      RPC_PORT: 50011
       CONTROLLER_HOST: controller
       CONTROLLER_PORT: 50000
-      NODE_IP: "0.0.0.0"
-      PROCESS_ID: "dkjbwlbpwivbu"
-    user: "999:21"
+      HOST: "0.0.0.0"
+      PORT: 50012
+      CONFIG_PATH: "/etc/config/process_config.yaml"
+      CACHE_DB_HOST: cache
+      CACHE_DB_PORT: 6379
+      CACHE_DB_PWD: "supersecurepassword"
+      LOCAL_BUFFER_DIR: "/tmp"
+    user: "997:23"
     networks:
       cdi-network: { }
+    volumes:
+      - type: bind
+        source: ../kube/common_config/process_config.yaml
+        target: /etc/config/process_config.yaml
+
+  detector:
+    image: adarshzededa/cdi-detector:latest
+    restart: always
+    ports:
+      - "50021:50021"
+    ipc: host
+    depends_on:
+      - minion
+      - cache
+    build:
+      context: ../../
+      dockerfile: srvs/detector/Dockerfile
+      args:
+        - service=detector
+    environment:
+      NODE_IP: "minion"
+      PROCESS_ID: "ebe87a92-8f00-49d7-9133-05bc592a58d5"
+      CONTAINER_NAME: "detector"
+      CONTAINER_IP: "detector"
+      CONTAINER_NAMESPACE: "default"
+      RPC_HOST: "0.0.0.0"
+      RPC_PORT: 50021
+      CONTROLLER_HOST: controller
+      CONTROLLER_PORT: 50000
+      CONFIG_PATH: "/etc/config/process_config.yaml"
+    user: "996:24"
+    networks:
+      cdi-network: { }
+    volumes:
+      - type: bind
+        source: ../kube/common_config/process_config.yaml
+        target: /etc/config/process_config.yaml
+
+  combiner:
+    image: adarshzededa/cdi-combiner:latest
+    restart: always
+    ports:
+      - "50031:50031"
+    ipc: host
+    depends_on:
+      - minion
+      - cache
+    build:
+      context: ../../
+      dockerfile: srvs/combiner/Dockerfile
+      args:
+        - service=combiner
+    environment:
+      NODE_IP: "minion"
+      PROCESS_ID: "b1610e6e-19a4-49ac-a692-8bae7cefb0a7"
+      CONTAINER_NAME: "combiner"
+      CONTAINER_IP: "combiner"
+      CONTAINER_NAMESPACE: "default"
+      RPC_HOST: "0.0.0.0"
+      RPC_PORT: 50031
+      CONTROLLER_HOST: controller
+      CONTROLLER_PORT: 50000
+      CONFIG_PATH: "/etc/config/process_config.yaml"
+      CACHE_DB_HOST: cache
+      CACHE_DB_PORT: 6379
+      CACHE_DB_PWD: "supersecurepassword"
+      LOCAL_BUFFER_DIR: "/tmp"
+    user: "995:25"
+    networks:
+      cdi-network: { }
+    volumes:
+      - type: bind
+        source: ../kube/common_config/process_config.yaml
+        target: /etc/config/process_config.yaml
+#  app_process:
+#    image: adarshzededa/cdi-app-process:latest
+#    restart: always
+#    ports:
+#      - "50002:50002"
+#    ipc: host
+#    depends_on:
+#      - controller
+#      - minion
+#    build:
+#      context: ../../
+#      dockerfile: srvs/app_process/Dockerfile
+#      args:
+#        - service=app_process
+#    environment:
+#      HOST: "0.0.0.0"
+#      PORT: 50002
+#      CONTROLLER_HOST: controller
+#      CONTROLLER_PORT: 50000
+#      NODE_IP: "0.0.0.0"
+#      PROCESS_ID: "dkjbwlbpwivbu"
+#    user: "999:21"
+#    networks:
+#      cdi-network: { }
 
 
 volumes:
   postgresql-data:
+    driver: local
+  redis-data:
     driver: local
 
 networks:
