@@ -7,12 +7,14 @@ from grpc_health.v1 import health_pb2 as _health_pb2
 from grpc_health.v1 import health_pb2_grpc as _health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 
+from library.rdma.msq import IPCMsgQueue
+from library.rdma.server import start_server
 from srvs.common.rpc_api import minion_api_pb2_grpc as pb2_grpc, minion_api_pb2 as pb2
 from library.common.utils import decode_payload, encode_payload
 from library.shm.shm_lib import SharedMemory
 from library.shm.shm_ops import SHM_access
 from srvs.minion.db.cdi_minion_table_ops import CDI_Minion_Table
-from srvs.minion.rpc_api.minion_client_api_handlers import MinionClient
+from srvs.minion.rpc_api.minion_client_api_handlers import MinionClient, MinionRDMAClient
 
 _THREAD_POOL_SIZE = 256
 _GRPC_MSG_SIZE = 20 * 1024 * 1024
@@ -151,7 +153,7 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
             cdi_minion_table_list.append(cdi_minion_table)
 
         # Transfer the data to the requested host
-        client = MinionClient(host=request.transfer_host, port=request.transfer_port)
+        client = MinionRDMAClient(host=request.transfer_host, port=request.transfer_port)
         response = client.CreateCDIs(cdi_minion_table_list)  # make sure cdi_minion_table.payload is populated
         if response.err != "":
             err = f"Minion-TransferAndDeleteCDIs: exception while transferring CDI to {request.transfer_host}:{request.transfer_port}: {response.err}"
@@ -227,7 +229,8 @@ def _configure_maintenance_server(server: grpc.Server) -> None:
 
 def serve_rpc(rpc_host, rpc_port):
     logging.info(f"Starting RPC server on : {rpc_host}:{rpc_port}")
-    channel_opt = [('grpc.max_send_message_length', _GRPC_MSG_SIZE), ('grpc.max_receive_message_length', _GRPC_MSG_SIZE)]
+    channel_opt = [('grpc.max_send_message_length', _GRPC_MSG_SIZE),
+                   ('grpc.max_receive_message_length', _GRPC_MSG_SIZE)]
     server = grpc.server(thread_pool=futures.ThreadPoolExecutor(max_workers=_THREAD_POOL_SIZE), options=channel_opt)
 
     pb2_grpc.add_MinionControllerServiceServicer_to_server(MinionControllerService(), server)
@@ -236,3 +239,8 @@ def serve_rpc(rpc_host, rpc_port):
 
     server.start()
     server.wait_for_termination()
+
+
+def serve_rdma(rdma_host, rdma_port, msq):
+    logging.info(f"Starting RDMA server on : {rdma_host}:{rdma_port}")
+    start_server(rdma_host, rdma_port, msq)

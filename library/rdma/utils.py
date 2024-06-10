@@ -7,7 +7,7 @@ UNIX_PATH_MAX = 108
 PF_UNIX = socket.AF_UNIX
 PF_INET = socket.AF_INET
 
-DATA_SIZE = 1024 * 1024
+DATA_SIZE = 1024 * 1024 * 10
 
 
 def SUN_LEN(path):

@@ -2,5 +2,7 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/deployment/kube/k8s-rdma-shared-dev-plugin" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/deployment/kube/multus-cni" vcs="Git" />
   </component>
 </project>

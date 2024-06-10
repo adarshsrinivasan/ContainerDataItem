@@ -1,5 +1,8 @@
 FROM adarshzededa/cdi-common:latest
 
+RUN apt-get install -y rdma-core libibverbs1 libibverbs-dev librdmacm1 librdmacm-dev rdmacm-utils ibverbs-utils
+RUN apt-get install -y cmake libzmq3-dev
+
 ARG service=minion
 
 WORKDIR /python-cdi

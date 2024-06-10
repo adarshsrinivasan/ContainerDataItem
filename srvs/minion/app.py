@@ -1,17 +1,24 @@
 import logging
+import threading
 
 from library.common.constants import CONTROLLER_HOST_ENV, CONTROLLER_PORT_ENV, NODE_IP_ENV, \
-    RPC_HOST_ENV, RPC_PORT_ENV, CONTAINER_NAME_ENV, CONTAINER_IP_ENV, CONTAINER_NAMESPACE_ENV
+    RPC_HOST_ENV, RPC_PORT_ENV, CONTAINER_NAME_ENV, CONTAINER_IP_ENV, CONTAINER_NAMESPACE_ENV, RDMA_HOST_ENV, \
+    RDMA_PORT_ENV
 from library.common.utils import getenv_with_default
+from library.rdma.msq import IPCMsgQueue
 
 from srvs.minion.db.cdi_minion_table_ops import init_cdi_minion_data_table
 from srvs.minion.rpc_api.controller_client_api_handlers import ControllerClient, register_with_controller
-from srvs.minion.rpc_api.server_api_handlers import serve_rpc
+from srvs.minion.rpc_api.server_api_handlers import serve_rpc, serve_rdma, _GRPC_MSG_SIZE
 from library.shm.shm_lib import SHM_Test
 
 
 def init_db():
     init_cdi_minion_data_table()
+
+
+def handle_frame(frame):
+    logging.info(f"received the frame: {len(frame)}")
 
 
 if __name__ == '__main__':
@@ -27,6 +34,8 @@ if __name__ == '__main__':
 
     rpc_host = getenv_with_default(RPC_HOST_ENV, "0.0.0.0")
     rpc_port = getenv_with_default(RPC_PORT_ENV, "50001")
+    rdma_host = getenv_with_default(RDMA_HOST_ENV, "10.10.1.1")
+    rdma_port = getenv_with_default(RDMA_PORT_ENV, "12345")
     controller_host = getenv_with_default(CONTROLLER_HOST_ENV, "0.0.0.0")
     controller_port = getenv_with_default(CONTROLLER_PORT_ENV, "50000")
 
@@ -34,4 +43,10 @@ if __name__ == '__main__':
     register_with_controller(name=container_name, namespace=container_namespace, node_ip=node_ip, host=container_ip,
                              port=rpc_port, controller_host=controller_host, controller_port=controller_port)
 
-    serve_rpc(rpc_host, rpc_port)
+    # create IPC message queue
+    msg_queue = IPCMsgQueue(1234)  # TODO: get from env?
+    msq_id = msg_queue.get_queue()
+
+    t_msq = threading.Thread(target=msg_queue.receive_frame_from_queue, args=(_GRPC_MSG_SIZE, handle_frame,))
+    t_rpc_server = threading.Thread(target=serve_rpc, args=(rpc_host, rpc_port))
+    t_rdma_server = threading.Thread(target=serve_rdma, args=(rdma_host, rdma_port, msg_queue))

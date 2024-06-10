@@ -56,18 +56,16 @@ class IPCMsgQueue:
         raise NotImplementedError
 
     def receive_frame_from_queue(self, buf_size, callback_fn=None):
-        list_of_frames = []
+        list_of_frames_received = []
         while True:
             buf = create_string_buffer(buf_size + 16)
             recv_len = libc.msgrcv(self.msq_id, buf, buf_size + 16, 1, 0)
             if recv_len != -1:
                 frame_msg = FrameMsg.from_buffer(buf)
-                if len(frame_msg.ftext) < 10:
-                    print(frame_msg.ftext)
                 if frame_msg.ftext == b"Done":
-                    if callback_fn: callback_fn(list_of_frames)
+                    if callback_fn: callback_fn(frame_msg.ftext)
                 else:
-                    list_of_frames.append(frame_msg.ftext)
+                    list_of_frames_received.append(frame_msg.ftext)
             else:
                 logging.error(f"Error in receiving frame from the queue")
                 os._exit(0)

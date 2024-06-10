@@ -40,8 +40,9 @@ if __name__ == '__main__':
     # print("Data generation completed!")
 
     time.sleep(1)
-    for x in range(0, 10):
+    for x in range(0, 5):
         data = generate_big_data()
         print(f"Sending data of size : {len(data)}")
         start_client(sockaddr, data)
+    start_client(sockaddr, "Done")
     print("Done")

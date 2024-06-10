@@ -1,5 +1,6 @@
 # Tutorial: https://www.youtube.com/watch?v=zj6r_EEhv6s
 deploy:
+	kubectl apply -f macvlan-conf.yaml
 	kubectl apply -f minion-daemonset.yaml
 	kubectl apply -f minion-service.yaml
 

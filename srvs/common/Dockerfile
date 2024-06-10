@@ -12,10 +12,12 @@ COPY Makefile Makefile
 COPY srvs/$service srvs/$service
 
 RUN apt-get update && apt-get -y install ffmpeg libsm6 libxext6 make
+RUN apt-get install libibverbs1 libibverbs-dev librdmacm1 librdmacm-dev rdmacm-utils ibverbs-utils -y
 
 RUN pip3 install -r srvs/$service/requirements.txt
 
 RUN make build-shm-c-lib
+RUN make build-rdma-c-lib
 
 ENV SERVICE=${service}
 ENV PYTHONPATH=/python-cdi:/python-cdi/srvs/${SERVICE}/rpc_api

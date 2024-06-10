@@ -16,6 +16,13 @@ build-shm-c-lib:
 	gcc -shared -fpic -o shm_lib_$(shell uname -s | tr A-Z a-z).so library/shm/shm_lib.c
 	chmod 777 shm_lib_$(shell uname -s | tr A-Z a-z).so
 
+build-rdma-c-lib:
+	gcc -shared -fpic -o rdma_server_lib_$(shell uname -s | tr A-Z a-z).so library/rdma/lib_c/server.c library/rdma/lib_c/utils.c library/rdma/lib_c/structs.h -lrdmacm -libverbs
+	gcc -shared -fpic -o rdma_client_lib_$(shell uname -s | tr A-Z a-z).so library/rdma/lib_c/client.c library/rdma/lib_c/utils.c library/rdma/lib_c/structs.h -lrdmacm -libverbs
+	chmod 777 rdma_server_lib_$(shell uname -s | tr A-Z a-z).so
+	chmod 777 rdma_client_lib_$(shell uname -s | tr A-Z a-z).so
+	cp rdma_server_lib_linux.so rdma_client_lib_linux.so library/rdma/
+
 setup-buildx:
 	#docker buildx create \
 #    	--use desktop-linux \

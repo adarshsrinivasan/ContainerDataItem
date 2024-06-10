@@ -10,7 +10,10 @@ spec:
     metadata:
       labels:
         app: minion
+      annotations:
+        k8s.v1.cni.cncf.io/networks: macvlan-conf-1
     spec:
+      restartPolicy: Always
       securityContext:
         runAsUser: 998
         runAsGroup: 22
@@ -24,6 +27,10 @@ spec:
               value: "0.0.0.0"
             - name: RPC_PORT
               value: "50000"
+            - name: RDMA_HOST
+              value: "0.0.0.0"
+            - name: RDMA_PORT
+              value: "12345"
             - name: SQL_HOST
               value: "postgres"
             - name: SQL_PORT
@@ -54,10 +61,15 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+          securityContext:
+            capabilities:
+              add: [ "IPC_LOCK" ]
           resources:
             requests:
               cpu: 100m
               memory: 400Mi
+            limits:
+              rdma/hca_shared_devices_a: 1
           ports:
             - containerPort: 50000
               hostPort: 50000
