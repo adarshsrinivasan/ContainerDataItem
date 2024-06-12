@@ -56,6 +56,7 @@ class IPCMsgQueue:
         raise NotImplementedError
 
     def receive_frame_from_queue(self, buf_size, callback_fn=None):
+        logging.info("IPCMsgQueue: receive_frame_from_queue: started")
         list_of_frames_received = []
         while True:
             buf = create_string_buffer(buf_size + 16)

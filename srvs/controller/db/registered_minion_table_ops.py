@@ -13,22 +13,27 @@ def init_registered_minion_table():
                 namespace VARCHAR (50) NOT NULL,
                 node_ip VARCHAR (50) UNIQUE NOT NULL,
                 rpc_ip VARCHAR (50) UNIQUE NOT NULL,
-                rpc_port BIGINT NOT NULL);""")
+                rpc_port BIGINT NOT NULL,
+                rdma_ip VARCHAR (50) NOT NULL,
+                rdma_port BIGINT NOT NULL);""")
     logging.info(f"Created {TABLE_NAME} Table!")
 
 
 class Registered_Minion_Table:
-    def __init__(self, name="", namespace="", node_ip="", rpc_ip="", rpc_port=0):
+    def __init__(self, name="", namespace="", node_ip="", rpc_ip="", rpc_port=0, rdma_ip="", rdma_port=0):
         self.id = -1
         self.name = name
         self.namespace = namespace
         self.node_ip = node_ip
         self.rpc_ip = rpc_ip
         self.rpc_port = rpc_port
+        self.rdma_ip = rdma_ip
+        self.rdma_port = rdma_port
+
 
     def insert(self):
         execute_sql_command(
-            f"""INSERT INTO {TABLE_NAME}(name, namespace, node_ip, rpc_ip, rpc_port) VALUES('{self.name}', '{self.namespace}', '{self.node_ip}', '{self.rpc_ip}', {self.rpc_port});""")
+            f"""INSERT INTO {TABLE_NAME}(name, namespace, node_ip, rpc_ip, rpc_port, rdma_ip, rdma_port) VALUES('{self.name}', '{self.namespace}', '{self.node_ip}', '{self.rpc_ip}', {self.rpc_port}, '{self.rdma_ip}', {self.rdma_port});""")
 
     def get_by_node_ip(self):
         result = None
@@ -40,7 +45,7 @@ class Registered_Minion_Table:
 
     def update_by_node_ip(self):
         execute_sql_command(
-            f"""UPDATE {TABLE_NAME} SET name = '{self.name}', namespace = '{self.namespace}', rpc_ip = '{self.rpc_ip}', rpc_port = {self.rpc_port} WHERE node_ip = '{self.node_ip}';""")
+            f"""UPDATE {TABLE_NAME} SET name = '{self.name}', namespace = '{self.namespace}', rpc_ip = '{self.rpc_ip}', rpc_port = {self.rpc_port}, rdma_ip = '{self.rdma_ip}', rdma_port = {self.rdma_port} WHERE node_ip = '{self.node_ip}';""")
 
     def delete_by_node_ip(self):
         execute_sql_command(f"""DELETE FROM {TABLE_NAME} WHERE node_ip='{self.node_ip}';""")
@@ -52,3 +57,5 @@ class Registered_Minion_Table:
         self.node_ip = tuple_data[3]
         self.rpc_ip = tuple_data[4]
         self.rpc_port = int(tuple_data[5])
+        self.rdma_ip = tuple_data[6]
+        self.rdma_port = int(tuple_data[7])

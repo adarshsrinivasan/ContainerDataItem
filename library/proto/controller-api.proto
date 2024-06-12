@@ -58,6 +58,8 @@ message RegisterMinionRequest {
   string node_ip = 3;
   string rpc_ip = 4;
   string rpc_port = 5;
+  string rdma_ip = 6;
+  string rdma_port = 7;
 }
 
 message RegisterMinionResponse {

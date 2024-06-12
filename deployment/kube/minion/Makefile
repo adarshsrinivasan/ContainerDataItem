@@ -7,7 +7,7 @@ deploy:
 delete:
 	kubectl delete -f minion-service.yaml
 	kubectl delete -f minion-daemonset.yaml
-
+	kubectl delete -f macvlan-conf.yaml
 forward:
 	sleep 10
 	nohup kubectl port-forward service/minion 50000:50000 --address 0.0.0.0 > /dev/null 2>&1 &

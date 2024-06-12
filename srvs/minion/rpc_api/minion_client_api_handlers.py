@@ -38,7 +38,8 @@ class MinionRDMAClient(object):
         for cdi_minion_table in cdi_minion_table_list:
             request_list.append(cdi_minion_table.as_proto_cdi_config())
         message = pb2.MinionCreateCDIsRequest(cdi_configs=request_list)
-        logging.info(f"message: {message}")
-        for _message in message:
-            logging.info(f"sending message of len: {len(message)} to client")
+        # logging.info(f"message: {message}")
+        for _message in message.cdi_configs:
+            logging.info(f"sending message of len: {len(message.cdi_configs)} to client")
             start_client(self.host, self.server_port, _message)
+        start_client(self.host, self.server_port, "Done")

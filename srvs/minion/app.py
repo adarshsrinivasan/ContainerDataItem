@@ -41,12 +41,23 @@ if __name__ == '__main__':
 
     init_db()
     register_with_controller(name=container_name, namespace=container_namespace, node_ip=node_ip, host=container_ip,
-                             port=rpc_port, controller_host=controller_host, controller_port=controller_port)
+                             port=rpc_port, controller_host=controller_host, controller_port=controller_port,
+                             rdma_ip=rdma_host, rdma_port=rdma_port)
 
     # create IPC message queue
     msg_queue = IPCMsgQueue(1234)  # TODO: get from env?
     msq_id = msg_queue.get_queue()
+    logging.info("Im here1 :)")
 
-    t_msq = threading.Thread(target=msg_queue.receive_frame_from_queue, args=(_GRPC_MSG_SIZE, handle_frame,))
+    t_msq = threading.Thread(target=msg_queue.receive_frame_from_queue, args=(_GRPC_MSG_SIZE, handle_frame,)) # CreateCDIs
     t_rpc_server = threading.Thread(target=serve_rpc, args=(rpc_host, rpc_port))
-    t_rdma_server = threading.Thread(target=serve_rdma, args=(rdma_host, rdma_port, msg_queue))
+    t_rdma_server = threading.Thread(target=serve_rdma, args=(rdma_host, int(rdma_port), msg_queue))
+
+    t_msq.start()
+    t_rpc_server.start()
+    t_rdma_server.start()
+
+    t_msq.join()
+    t_rpc_server.join()
+    t_rdma_server.join()
+
