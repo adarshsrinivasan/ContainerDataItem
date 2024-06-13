@@ -27,8 +27,6 @@ spec:
               value: "0.0.0.0"
             - name: RPC_PORT
               value: "50000"
-            - name: RDMA_HOST
-              value: "10.56.217.172"
             - name: RDMA_PORT
               value: "12345"
             - name: SQL_HOST

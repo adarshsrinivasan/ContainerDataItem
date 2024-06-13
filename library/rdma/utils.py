@@ -37,7 +37,7 @@ def to_sockaddr(family, address, port):
         addr = sockaddr_in()
         addr.sa_family = ctypes.c_ushort(family)
         if port:
-            addr.sin_port = ctypes.c_ushort(socket.htons(port))
+            addr.sin_port = ctypes.c_ushort(socket.htons(int(port)))
         if address:
             bytes_ = [int(i) for i in address.split('.')]
             addr.sin_addr = (ctypes.c_byte * 4)(*bytes_)

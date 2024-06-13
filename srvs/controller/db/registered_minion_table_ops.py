@@ -14,7 +14,7 @@ def init_registered_minion_table():
                 node_ip VARCHAR (50) UNIQUE NOT NULL,
                 rpc_ip VARCHAR (50) UNIQUE NOT NULL,
                 rpc_port BIGINT NOT NULL,
-                rdma_ip VARCHAR (50) NOT NULL,
+                rdma_ip VARCHAR (50) UNIQUE NOT NULL,
                 rdma_port BIGINT NOT NULL);""")
     logging.info(f"Created {TABLE_NAME} Table!")
 

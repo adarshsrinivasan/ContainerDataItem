@@ -7,14 +7,13 @@ from grpc_health.v1 import health_pb2 as _health_pb2
 from grpc_health.v1 import health_pb2_grpc as _health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 
-from library.rdma.msq import IPCMsgQueue
-from library.rdma.server import start_server
 from srvs.common.rpc_api import minion_api_pb2_grpc as pb2_grpc, minion_api_pb2 as pb2
-from library.common.utils import decode_payload, encode_payload
+from library.common.utils import encode_payload
 from library.shm.shm_lib import SharedMemory
 from library.shm.shm_ops import SHM_access
+from srvs.minion.common.cdi_ops_handlers import create_cdis
 from srvs.minion.db.cdi_minion_table_ops import CDI_Minion_Table
-from srvs.minion.rpc_api.minion_client_api_handlers import MinionClient, MinionRDMAClient
+from srvs.minion.rdma.minion_rdma_ops import MinionRDMAClient
 
 _THREAD_POOL_SIZE = 256
 _GRPC_MSG_SIZE = 20 * 1024 * 1024
@@ -27,54 +26,8 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
     # CreateCDIs handles the RPC request from Controller and other Minions to create a CDI locally on the node
     def CreateCDIs(self, request, context):
         logging.info(f"CreateCDIs: Processing request")
-        for cdi_config in request.cdi_configs:
-            # convert the proto cdi config to CDI_Minion_Table model
-            cdi_minion_table = CDI_Minion_Table(cdi_id=cdi_config.cdi_id)
-            logging.info(f"CreateCDIs: Fetching cdi record with key: {cdi_minion_table.cdi_id}")
-            # check if we already created the CDI
-            result = cdi_minion_table.get_by_cdi_id()
-            cdi_minion_table.load_proto_cdi_config(cdi_config)
-
-            logging.error(f"CreateCDIs: Processing cdi record with key: {cdi_minion_table.cdi_id}")
-            # if not created, the creat it and set right permissions
-            shm = SharedMemory(size=cdi_minion_table.cdi_size_bytes, key=cdi_minion_table.cdi_key,
-                               shm_mode=cdi_minion_table.cdi_access_mode, uid=cdi_minion_table.uid,
-                               gid=cdi_minion_table.gid, create_shm=True)
-            shm_access = SHM_access()
-            logging.info(
-                f"Minion-CreateCDIs: Accessing SharedMemory for App: {cdi_minion_table.app_id}, CDI: {cdi_minion_table.cdi_id}")
-            try:
-                shm_access.shm_id = shm.create()
-                shm_access.size = cdi_minion_table.cdi_size_bytes
-            except Exception as err:
-                logging.error(f"CreateCDIs: {err}")
-                err = f"Exception while creating SharedMemory for App: {cdi_minion_table.app_id}, CDI: {cdi_minion_table.cdi_id}: {err}"
-                return pb2.MinionCreateCDIsResponse(err=err)
-
-            # Set the right permissions
-            try:
-                shm.print_stat()
-                shm.set(uid=cdi_minion_table.uid, gid=cdi_minion_table.gid,
-                        shm_mode=cdi_minion_table.cdi_access_mode)
-            except Exception as err:
-                err = f"Exception while changing permission of SharedMemory for App: {cdi_minion_table.app_id}, CDI: {cdi_minion_table.cdi_id}: {err}"
-                logging.error(f"CreateCDIs: {err}")
-                return pb2.MinionCreateCDIsResponse(err=err)
-
-            if result is None:
-                logging.error(f"CreateCDIs: Inserting cdi record with key: {cdi_minion_table.cdi_id}")
-                # insert the new record into the DB
-                cdi_minion_table.insert()
-            else:
-                logging.error(f"CreateCDIs: Updating cdi record with key: {cdi_minion_table.cdi_id}")
-                # If the request contains a payload, then populate the CDI with the payload.
-                if cdi_minion_table.payload != "":
-                    shm_access.clear_data()
-                    shm_access.write_data(cdi_minion_table.payload)
-                cdi_minion_table.update_by_cdi_id()
-
-            logging.info(f"CreateCDIs: Successfully created cdi record for key: {cdi_minion_table.cdi_id}")
-        return pb2.MinionCreateCDIsResponse(err="")
+        err = create_cdis(request=request)
+        return pb2.MinionCreateCDIsResponse(err=err)
 
     # UpdateCDIs handles the RPC request from Controller to update the permissions of a CDI
     def UpdateCDIs(self, request, context):
@@ -240,7 +193,3 @@ def serve_rpc(rpc_host, rpc_port):
     server.start()
     server.wait_for_termination()
 
-
-def serve_rdma(rdma_host, rdma_port, msq):
-    logging.info(f"Starting RDMA server on : {rdma_host}:{rdma_port}")
-    start_server(rdma_host, rdma_port, msq)

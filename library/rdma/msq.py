@@ -64,7 +64,8 @@ class IPCMsgQueue:
             if recv_len != -1:
                 frame_msg = FrameMsg.from_buffer(buf)
                 if frame_msg.ftext == b"Done":
-                    if callback_fn: callback_fn(frame_msg.ftext)
+                    if callback_fn:
+                        callback_fn(list_of_frames_received)
                 else:
                     list_of_frames_received.append(frame_msg.ftext)
             else:
