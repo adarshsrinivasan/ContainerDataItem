@@ -14,9 +14,6 @@ spec:
         k8s.v1.cni.cncf.io/networks: whereabouts-conf
     spec:
       restartPolicy: Always
-      securityContext:
-        runAsUser: 998
-        runAsGroup: 22
       hostIPC: True
       containers:
         - name: minion
@@ -62,12 +59,15 @@ spec:
           securityContext:
             capabilities:
               add: [ "IPC_LOCK" ]
+#            runAsUser: 998
+#            runAsGroup: 22
           resources:
             requests:
               cpu: 100m
               memory: 400Mi
             limits:
               rdma/hca_shared_devices_a: 1
+              memory: "1Gi"
           ports:
             - containerPort: 50000
               hostPort: 50000
