@@ -22,7 +22,7 @@ lib.start_rdma_server.restype = ctypes.c_char_p
 def start_server(host, port, msq: IPCMsgQueue):
     try:
         af = socket.AF_INET
-        logging.info(type(host), type(port), type(msq.msq_id))
+        # logging.info(type(host), type(port), type(msq.msq_id))
         sockaddr = to_sockaddr(af, host, port)
         logging.info("socket created")
         lib.start_rdma_server(sockaddr, msq.msq_id)

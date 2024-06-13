@@ -22,7 +22,7 @@ class MinionRDMAClient(object):
             logging.info(f"sending message of len: {len(message.cdi_configs)} to client")
             _message_serialized = _message.SerializeToString()
             start_client(self.host, self.server_port, _message_serialized)
-        start_client(self.host, self.server_port, "Done")
+        start_client(self.host, self.server_port, b"Done")
 
 
 def serve_rdma(rdma_host, rdma_port, msq):

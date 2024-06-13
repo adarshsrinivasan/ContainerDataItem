@@ -30,16 +30,20 @@ class Registered_Minion_Table:
         self.rdma_ip = rdma_ip
         self.rdma_port = rdma_port
 
-
     def insert(self):
-        execute_sql_command(
-            f"""INSERT INTO {TABLE_NAME}(name, namespace, node_ip, rpc_ip, rpc_port, rdma_ip, rdma_port) VALUES('{self.name}', '{self.namespace}', '{self.node_ip}', '{self.rpc_ip}', {self.rpc_port}, '{self.rdma_ip}', {self.rdma_port});""")
+        result = self.get_by_node_ip(load=False)
+        if result:
+            self.update_by_node_ip()
+        else:
+            execute_sql_command(
+                f"""INSERT INTO {TABLE_NAME}(name, namespace, node_ip, rpc_ip, rpc_port, rdma_ip, rdma_port) VALUES('{self.name}', '{self.namespace}', '{self.node_ip}', '{self.rpc_ip}', {self.rpc_port}, '{self.rdma_ip}', {self.rdma_port});""")
 
-    def get_by_node_ip(self):
+    def get_by_node_ip(self, load=True):
         result = None
         result_rows = execute_sql_command(f"""SELECT * FROM {TABLE_NAME} WHERE node_ip='{self.node_ip}';""", True)
         if len(result_rows) > 0:
-            self.load_tuple(result_rows[0])
+            if load:
+                self.load_tuple(result_rows[0])
             result = self
         return result
 

@@ -21,7 +21,7 @@ def start_client(host, port, payload):
     try:
         af = socket.AF_INET
         sockaddr = to_sockaddr(af, host, port)
-        logging.info("start_client: sending string of size: ", len(payload))
+        logging.info(f"start_client: sending string of size: {len(payload)}")
         buf = ctypes.create_string_buffer(payload, len(payload))
         lib.start_client(sockaddr, buf)
     except Exception as e:
