@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: pod
+spec:
+  selector:
+    matchLabels:
+      app: minion
+  template:
+    metadata:
+      labels:
+        app: minion
+      annotations:
+        k8s.v1.cni.cncf.io/networks: whereabouts-conf
+    spec:
+      hostIPC: True
+      containers:
+        - name: pod
+          image: 135642/rdma
+          securityContext:
+            capabilities:
+              add: [ "IPC_LOCK" ]
+          resources:
+            limits:
+              rdma/hca_shared_devices_a: 1
+              memory: "1Gi"
+            requests:
+              memory: "200Mi"
+          command:
+            - "/bin/sh"
+            - "-c"
+            - "sleep 60m"
