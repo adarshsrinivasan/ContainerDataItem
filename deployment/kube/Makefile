@@ -8,10 +8,10 @@ deploy:
 	cd extractor && make deploy
 	cd detector && make deploy
 	cd combiner && make deploy
-	cd test-pod && make deploy
+#	cd test-pod && make deploy
 
 delete:
-	cd test-pod && make delete || true
+#	cd test-pod && make delete || true
 	cd combiner && make delete || true
 	cd detector && make delete || true
 	cd extractor && make delete || true
