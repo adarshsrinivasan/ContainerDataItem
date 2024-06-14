@@ -21,7 +21,7 @@ class MinionRDMAClient(object):
         for _message in message.cdi_configs:
             logging.info(f"sending message of len: {len(message.cdi_configs)} to client")
             _message_serialized = _message.SerializeToString()
-            start_client(self.host, self.server_port, _message_serialized)
+            start_client(self.host, self.server_port, b"Hello World")
         start_client(self.host, self.server_port, b"Done")
 
 

@@ -3,6 +3,7 @@ import os
 import socket
 import logging
 import sys
+from time import sleep
 
 from library.common.constants import SHM_DLL_DIR_PATH_ENV
 from library.common.utils import getenv_with_default
@@ -23,6 +24,7 @@ def start_client(host, port, payload):
         sockaddr = to_sockaddr(af, host, port)
         logging.info(f"start_client: sending string of size: {len(payload)}")
         buf = ctypes.create_string_buffer(payload, len(payload))
+        sleep(5)
         lib.start_client(sockaddr, buf)
     except Exception as e:
         err = f"Error: exception while running the client: {e}"

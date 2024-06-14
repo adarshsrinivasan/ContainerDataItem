@@ -1,6 +1,6 @@
 deploy:
 	cd redis && make deploy
-	cd prometheus && make deploy
+#	cd prometheus && make deploy
 	cd postgres && make deploy
 	cd controller && make deploy
 	cd minion && make deploy
@@ -19,5 +19,5 @@ delete:
 	cd minion && make delete || true
 	cd controller && make delete || true
 	cd postgres && make delete || true
-	cd prometheus && make delete || true
+#	cd prometheus && make delete || true
 	cd redis && make delete || true

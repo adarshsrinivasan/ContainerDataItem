@@ -70,9 +70,11 @@ class IPCMsgQueue:
                     list_of_frames_received.append(frame_msg.ftext)
             else:
                 logging.error(f"Error in receiving frame from the queue")
+                self.clear_queue()
                 os._exit(0)
 
     def get_queue(self):
+        self.clear_queue()
         logging.info(f"get_queue: getting a new or existing queue for key: {self.key}")
         self.msq_id = libc.msgget(self.key, IPC_CREAT | 0o644)
         return self.msq_id
