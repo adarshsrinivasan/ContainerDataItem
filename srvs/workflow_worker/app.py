@@ -6,6 +6,7 @@ import base64
 import redis
 import json
 from concurrent import futures
+from uuid import uuid4
 from rpc_api.controller_client_api_handlers import register_with_controller, ControllerClient
 from srvs.common.rpc_api import process_api_pb2_grpc as pb2_grpc, process_api_pb2 as pb2
 from library.common.cdi_config_model import Config
@@ -21,16 +22,15 @@ logging.basicConfig(level=logging.INFO)
 CDI_KEY = int(os.environ.get('CDI_KEY', "50067"))
 uid = 998
 guid = 22
-PROCESS_ID = os.environ.get('PROCESS_ID', 'worker')
 controller_host = os.environ.get('CONTROLLER_HOST', '0.0.0.0')
 controller_port = os.environ.get('CONTROLLER_PORT', '50000')
 controller_client = ControllerClient(host=controller_host, port=controller_port)
-cdi_id = os.environ.get('CDI_ID', '880519e2-7221-4387-aa1a-49707fd70812')
+PROCESS_ID = os.environ.get('PROCESS_ID', 'worker')
 
 redis_host = 'redis-service'
 redis_port = 6379
 password = "supersecurepassword"
-r = redis.Redis(host=redis_host, port=redis_port, decode_responses=True,password=password )
+r = redis.Redis(host=redis_host, port=redis_port, decode_responses=True, password=password)
 try:
     r.ping()
     print("Connected to Redis successfully!")
@@ -54,6 +54,7 @@ def register_worker(ip, port, queue_name, pool_count, process_id):
     response = requests.post(f'{SERVER_URL}/register_worker', json=data, headers=headers)
     print(f"Register worker response: {response.json()}")
 
+
 class ProcessService(pb2_grpc.ProcessServiceServicer):
     def __init__(self, *args, **kwargs):
         pass
@@ -61,6 +62,7 @@ class ProcessService(pb2_grpc.ProcessServiceServicer):
     def NotifyCDIsAccess(self, request, context):
         logging.info(f"NotifyCDIsAccess: Received access for the : {request}")
         return pb2.NotifyCDIsAccessResponse(err="")
+
 
 def serve_rpc(rpc_host, rpc_port):
     logging.info(f"Starting RPC server on: {rpc_host}:{rpc_port}")
@@ -73,20 +75,55 @@ def serve_rpc(rpc_host, rpc_port):
     except Exception as e:
         logging.error(f"Error in serve_rpc: {e}")
         server.stop(0)
-        serve_rpc(rpc_host, rpc_port) 
+        serve_rpc(rpc_host, rpc_port)
 
-def process_image(cdi_id, task_name):
-    response = controller_client.GetCDIsByProcessID(process_id=PROCESS_ID)
+
+def blur_image(image):
+    return cv2.GaussianBlur(image, (15, 15), 0)
+
+
+def rotate_image(image):
+    (h, w) = image.shape[:2]
+    center = (w / 2, h / 2)
+    M = cv2.getRotationMatrix2D(center, 180, 1.0)
+    return cv2.warpAffine(image, M, (w, h))
+
+
+def flip_image(image):
+    return cv2.flip(image, 1)
+
+
+def filter_cdi(cdi_config, cdi_id):
+    cdi_items = list(cdi_config.cdis.items())
+    for id, _ in cdi_items:
+        if id != cdi_id:
+            del cdi_config.cdis[id]
+
+
+def process_image(process_id, cdi_id, task_name):
+    response = controller_client.GetCDIsByProcessID(process_id=process_id)
     if response.err != "":
         raise Exception(f"extractor: exception while fetching cdi config: {response.err}")
     cdi_config = Config()
     cdi_config.from_proto_controller_cdi_configs(response.cdi_configs)
-    logging.info(f"Writing image data to CDI {cdi_id} for process {PROCESS_ID}")
+    filter_cdi(cdi_config, cdi_id)
     for id, cdi in cdi_config.cdis.items():
         if id == cdi_id:
             data = cdi.read_data()
-            print(f'writing data in cdi {cdi_id} for process {PROCESS_ID} and task {task_name}')
-            cdi.write_data(data)
+            image_data = base64.b64decode(data)
+            image = cv2.imdecode(np.frombuffer(image_data, np.uint8), cv2.IMREAD_COLOR)
+
+            if task_name == 'UNBLUR_IMAGE':
+                processed_image = blur_image(image)
+            elif task_name == 'CROP_IMAGE':
+                processed_image = rotate_image(image)
+            else:
+                processed_image = flip_image(image)
+
+            _, buffer = cv2.imencode('.jpg', processed_image)
+            processed_image_data = base64.b64encode(buffer).decode("utf-8")
+            cdi.write_data(processed_image_data)
+
 
 def process_tasks(queue):
     while True:
@@ -105,7 +142,7 @@ def process_tasks(queue):
             tasks_id = task_dict['tasks_id']
             worker_id = task_dict['worker_id']
             print('Received task', task_name, task_id, 'from workflow', workflow_name, workflow_id, workflow_exec_id)
-            process_image(request, task_name)
+            process_image(PROCESS_ID, request, task_name)
 
             data = {
                 'worker': {
@@ -127,7 +164,6 @@ def process_tasks(queue):
             logging.error(f"Error processing task: {e}")
 
 
-
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     logging.info("Registering Worker with Controller...")
@@ -146,8 +182,15 @@ if __name__ == '__main__':
     async_serve_rpc = threading.Thread(target=serve_rpc, args=(rpc_host, rpc_port), kwargs={})
     async_serve_rpc.start()
 
-    register_with_controller(process_id=PROCESS_ID, name=container_name, namespace=container_namespace, node_ip=node_ip, host=container_ip, port=rpc_port, controller_host=controller_host, controller_port=controller_port, uid=uid, gid=gid)
-    logging.info("Successfully registered with Controller!")
-    register_worker(rpc_host, rpc_port, queue, 2, PROCESS_ID)
-    logging.info("Successfully registered with workflow Controller!")
-    process_tasks(queue)
+    register_with_controller(process_id=PROCESS_ID, name=container_name, namespace=container_namespace,
+                             node_ip=node_ip, host=container_ip, port=rpc_port, controller_host=controller_host,
+                             controller_port=controller_port, uid=uid, gid=gid)
+    logging.info(f"Successfully registered process {PROCESS_ID} with Controller!")
+    register_worker(rpc_host, rpc_port, queue, 10, PROCESS_ID)
+
+    with futures.ThreadPoolExecutor(max_workers=10) as executor:
+        for _ in range(10):
+            executor.submit(process_tasks, queue)
+
+    # Ensure the main thread waits for all tasks to complete
+    async_serve_rpc.join()

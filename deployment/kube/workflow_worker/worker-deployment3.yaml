@@ -1,26 +1,26 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: workflow-scheduler
+  name: workflow-worker-3
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: workflow-scheduler
+      app: workflow-worker-3
   template:
     metadata:
       labels:
-        app: workflow-scheduler
+        app: workflow-worker-3
     spec:
       securityContext:
-        runAsUser: 994
-        runAsGroup: 21
+        runAsUser: 998
+        runAsGroup: 22
       hostIPC: True
       containers:
-      - name: workflow-scheduler
-        image: tarun1997/workflow-scheduler:latest
+      - name: workflow-worker
+        image: tarun1997/workflow-worker:latest
         ports:
-        - containerPort: 5001
+        - containerPort: 5005
         env:
         - name: NODE_IP
           valueFrom:
@@ -31,20 +31,24 @@ spec:
             fieldRef:
               fieldPath: metadata.name
         - name: CONTAINER_IP
-          value: "workflow-scheduler-service"
+          value: "workflow-worker-service-3"
         - name: CONTAINER_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
         - name: PROCESS_ID
-          value: "asa87b93-8f00-59d8-9133-05be592a59t1"
+          value: "awc87a83-8f10-49d7-9133-05bc592a51l1"
+        - name: CDI_ID
+          value: "980519e2-7221-4387-aa1a-69706fd61826"
+        - name: CDI_KEY
+          value: "52469" 
         - name: RPC_HOST
           value: "0.0.0.0"
         - name: RPC_PORT
-          value: "5001"
+          value: "5005"
         - name: CONTROLLER_HOST
           value: "controller-service"
         - name: CONTROLLER_PORT
           value: "50000"
-        - name: BEST_CASE
-          value: "True"
+        - name: QUEUE
+          value: "worker-queue-3"

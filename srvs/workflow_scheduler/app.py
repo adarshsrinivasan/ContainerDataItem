@@ -14,16 +14,13 @@ sys.path.append(parent_dir)
 import uuid
 import logging
 import boto3
+import datetime
 from rpc_api.controller_client_api_handlers import register_with_controller, ControllerClient
 from srvs.common.rpc_api import process_api_pb2_grpc as pb2_grpc, process_api_pb2 as pb2
 from library.common.cdi_config_model import Config
 from library.common.cdi_config_model import populate_config_from_parent_config, CDI
 from PIL import Image
 from io import BytesIO
-
-# Global variable to store the last push time
-last_push_time = None
-times = []
 
 redis_host = 'redis-service'
 redis_port = 6379
@@ -76,7 +73,6 @@ def create_cdi(cdi_key, cdi_id):
     print("create cdi request ", cdi_config)
     try:
         response = controller_client.CreateCDIs(cdi_config)
-        print("create cdi response", response)
         if response.err:
             logging.error(f"Error creating CDI: {response.err}")
         else:
@@ -86,27 +82,34 @@ def create_cdi(cdi_key, cdi_id):
         logging.error(f"Exception in create_cdi: {e}", exc_info=True)
         return None
 
+def filter_cdi(cdi_config, cdi_id):
+    cdi_items = list(cdi_config.cdis.items())
+    for id, _ in cdi_items:
+        if id != cdi_id:
+            del cdi_config.cdis[id]
+    
 def write_image_to_cdi(cdi_key, cdi_id, image_data):
     response = controller_client.GetCDIsByProcessID(process_id=process_id)
     if response.err != "":
         raise Exception(f"extractor: exception while fetching cdi config: {response.err}")
     cdi_config = Config()
     cdi_config.from_proto_controller_cdi_configs(response.cdi_configs)
+    filter_cdi(cdi_config, cdi_id)
     for id, cdi in cdi_config.cdis.items():
         if id == cdi_id:
             cdi.clear_data()
             data= image_data
             cdi.write_data(data)
-    print("updated cdi config for process", cdi_config, process_id)
     return cdi_config
 
-def get_request_cdi_transfer(previous_id,transfer_id):
+def get_request_cdi_transfer(previous_id,transfer_id, cdi_id):
     response = controller_client.GetCDIsByProcessID(process_id=previous_id)
     if response.err != "":
         raise Exception(f"extractor: exception while fetching cdi config: {response.err}")
     cdi_config = Config()
     cdi_config.from_proto_controller_cdi_configs(response.cdi_configs)
     cdi_config.transfer_id = transfer_id
+    filter_cdi(cdi_config, cdi_id)
     logging.info(f"Requesting CDI transfer to process {transfer_id} from {process_id} and config {cdi_config}")
     try:
         response = controller_client.TransferCDIs(cdi_config)
@@ -131,27 +134,44 @@ def request_cdi_transfer(transfer_id, cdi_key, cdi_config):
         return None
 
 def saveWorkflowOutput(cdi_config, cdi_id):
-    temp_folder = '/tmp'
-    output_file = os.path.join(temp_folder, f'{cdi_id}.jpeg')
     for id, cdi in cdi_config.cdis.items():
         if id == cdi_id:
             data = cdi.read_data()
             image_data = base64.b64decode(data)
             image = Image.open(BytesIO(image_data))
-            image.save(output_file, format="JPEG")
-            with open(output_file, 'rb') as file_data:
-                s3.put_object(Bucket='orkes-image-data', Key=f'cdi_{cdi_id}.jpeg', Body=file_data)
-                print(f'uploaded file cdi_{cdi_id}.jpeg to s3')
+            
+            buffered = BytesIO()
+            image.save(buffered, format="JPEG")
+            buffered.seek(0)  # Rewind the buffer to the beginning
+            s3.put_object(Bucket='orkes-image-data', Key=f'cdi_{cdi_id}.jpg', Body=buffered, ContentType='image/jpeg')
+            print(f'Uploaded file cdi_{cdi_id}.jpg to S3')
             break
 
+def fetch_image_from_s3(s3_url):
+    parsed_url = s3_url.split('/')
+    bucket_name = parsed_url[2].split('.')[0]
+    key = '/'.join(parsed_url[3:]) 
+    print(f'fetching image {key} from {bucket_name} ')
+    try:
+        response = s3.get_object(Bucket=bucket_name, Key=key)
+        image = Image.open(BytesIO(response['Body'].read()))
+        buffered = BytesIO()
+        image.save(buffered, format="JPEG")
+        image_data = base64.b64encode(buffered.getvalue()).decode("utf-8")
+        return image_data
+    except Exception as e:
+        logging.error(f"Error fetching image from S3: {e}")
+        return None
+
 def completeWorkflow(pId, cdi_id):
-    get_request_cdi_transfer(pId, process_id)
-    print('successfully transfered permission to the scheduler')
+    get_request_cdi_transfer(pId, process_id, cdi_id)
     response = controller_client.GetCDIsByProcessID(process_id)
     if response.err != "":
         raise Exception(f"extractor: exception while fetching cdi config: {response.err}")
     cdi_config = Config()
     cdi_config.from_proto_controller_cdi_configs(response.cdi_configs)
+    filter_cdi(cdi_config, cdi_id)
+    print(f'completing workflow {cdi_id}')
     saveWorkflowOutput(cdi_config, cdi_id)
     response = controller_client.DeleteCDIs(process_id, cdi_config)
     if response.err != "":
@@ -181,22 +201,13 @@ def serve_rpc(rpc_host, rpc_port):
         serve_rpc(rpc_host, rpc_port) 
 
 
-
 # Function to continuously process tasks from Redis
 def process_tasks():
-    global last_push_time 
     while True:
         task_object = r.blpop('scheduler_queue', timeout=0)
         key, task_json = task_object
         # Parse the JSON string back into a dictionary
         data = json.loads(task_json)
-        
-        # Calculate and print time difference if last_push_time is not None
-        if last_push_time is not None:
-            current_time = time.time()
-            time_difference = current_time - last_push_time
-            print("processing time is :", time_difference, "event is", data)
-            times.append(time_difference)
         
         if "controller" in data:
             print("task",data["controller"])
@@ -247,11 +258,11 @@ def process_tasks():
             cdi_id =str(uuid.uuid4())
             cdi_key = random.randint(10000, 99999)
             worker_process_id = worker_info[worker_id]['process_id']
-            print(f'creating cdi variable for workflow {workflow_id} on process {process_id}')
+            print(f'creating cdi variable for workflow {workflow_id} on process {process_id} and request {request}')
             create_cdi(cdi_key, cdi_id)
-            cdi_config = write_image_to_cdi(cdi_key, cdi_id, request)
+            downloded_data = fetch_image_from_s3(request)
+            cdi_config = write_image_to_cdi(cdi_key, cdi_id, downloded_data)
             request_cdi_transfer(worker_process_id, cdi_key, cdi_config)
-            last_push_time = time.time()
             work_request = {'workflow_exec_id': id ,'workflow_name': workflow_name, 'task_name': task_name, 'workflow_id': workflow_id, 'task_id': task_id, 'tasks_id': tasks_id, 'request': cdi_id, 'worker_id':worker_id}
             worker_json = json.dumps(work_request)
             r.rpush(worker_info[worker_id]['queue'],  worker_json)  
@@ -269,11 +280,7 @@ def process_tasks():
                 #This means that all the task is completed
                 cur = conn.cursor()
                 #doubt what is the predefined status value
-                cur.execute("UPDATE workflow_execution SET status = %s WHERE id = %s", ('COMPLETED', workflow_exec_id))
-                print(times)
-                print(sum(times) / len(times))
-                times.clear()
-                last_push_time = None
+                cur.execute("UPDATE workflow_execution SET status = %s, end_time = %s WHERE id = %s", ('COMPLETED', datetime.datetime.now(), workflow_exec_id))
                 cur.execute("SELECT * FROM workers where worker_id = %s",( worker_id,))
                 worker_ex = cur.fetchone()
                 print(f'worker finished the task {worker_ex}')
@@ -305,15 +312,16 @@ def process_tasks():
                 sorted_dict = dict(sorted(wi.items(), key=lambda item: item[1]))
                 sorted_items = list(sorted_dict.items())
                 # Get the last item, which is a tuple containing the last key-value pair
-                print(sorted_items,best_case)
                 if best_case:
                     new_worker_id = worker_id
                 else :
                     new_worker_id, _ = sorted_items[-1]
                     if new_worker_id==worker_id:
                         new_worker_id,_=sorted_items[-2]
-                    get_request_cdi_transfer(worker_info[worker_id]['process_id'],worker_info[new_worker_id]['process_id'])
+                    get_request_cdi_transfer(worker_info[worker_id]['process_id'],worker_info[new_worker_id]['process_id'], request)
                 
+                worker_info[new_worker_id]['current_load']=worker_info[new_worker_id]['current_load']+1
+                cur.execute("UPDATE workers SET current_pool = %s WHERE worker_id = %s", (worker_info[new_worker_id]['current_load'], new_worker_id))
                 index = tasks_id.index(task_id)
                 task_id=str(tasks_id[index+1])
                 
@@ -329,7 +337,6 @@ def process_tasks():
                 # Commit the transaction
                 conn.commit()
                 cur.close()
-                last_push_time = time.time()
                 wdata= {'workflow_exec_id': workflow_exec_id ,'workflow_name': workflow_name, 'task_name': task_name, 'workflow_id': workflow_id, 'task_id': task_id, 'tasks_id': tasks_id, 'request': request, 'worker_id':new_worker_id}
                 worker_json = json.dumps(wdata)
                 r.rpush(worker_info[new_worker_id]['queue'],  worker_json) 
@@ -345,5 +352,10 @@ if __name__ == '__main__':
                              node_ip=node_ip, host=container_ip, port=rpc_port, controller_host=controller_host,
                              controller_port=controller_port, uid=uid, gid=gid)
 
-    logging.info("Successfully registered with Controller!")
-    process_tasks()
+    logging.info(f"Successfully registered with Controller! executing case bestcase :{best_case}")
+    with futures.ThreadPoolExecutor(max_workers=10) as executor:
+        for _ in range(10):
+            executor.submit(process_tasks)
+
+    # Ensure the main thread waits for all tasks to complete
+    async_serve_rpc.join()

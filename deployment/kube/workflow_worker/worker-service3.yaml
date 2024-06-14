@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: workflow-worker-service-3
+  labels:
+    app: workflow-worker-3
+spec:
+  ports:
+    - protocol: "TCP"
+      port: 5005
+      targetPort: 5005
+  selector:
+    app: workflow-worker-3

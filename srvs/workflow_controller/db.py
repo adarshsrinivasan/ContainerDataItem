@@ -75,7 +75,9 @@ def init_tables():
             workflow_id INTEGER REFERENCES workflow_definition(id),
             next_task_id INTEGER,
             request JSON,
-            status workflow_status
+            status workflow_status,
+            start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            end_time TIMESTAMP                       
         );
     """)
     logging.info("Created workflow_execution table!")
