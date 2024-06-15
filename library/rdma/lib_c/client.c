@@ -214,7 +214,7 @@ static void connect_to_server() {
     bzero(&conn_param, sizeof(conn_param));
     conn_param.initiator_depth = 3;
     conn_param.responder_resources = 3;
-    conn_param.retry_count = 3;
+    conn_param.retry_count = 232;
     HANDLE_NZ(rdma_connect(client_res->id, &conn_param));
 }
 
@@ -246,7 +246,7 @@ int post_recv_ack() {
  * Blocking while loop which checks for incoming events and calls the necessary
  * functions based on the received events
  */
-static void wait_for_event(struct sockaddr_in *s_addr, char* str_to_send) {
+static int wait_for_event(struct sockaddr_in *s_addr, char* str_to_send) {
 
     struct rdma_cm_event *received_event = NULL;
     struct memory_region *frame = NULL;
@@ -283,7 +283,6 @@ static void wait_for_event(struct sockaddr_in *s_addr, char* str_to_send) {
                 post_recv_ack();
 
                 clock_gettime(CLOCK_MONOTONIC_RAW, &start);
-
                 int ret = send_message_to_server(frame);
                 if (ret < 0) {
                     error("Unable to send message to server \n");
@@ -300,19 +299,21 @@ static void wait_for_event(struct sockaddr_in *s_addr, char* str_to_send) {
                 rdma_disconnect(client_res->id);
                 disconnect_client(client_res, cm_event_channel, frame, &server_buff, &client_buff);
                 //cm_client_id = NULL;
-                return;
+                return 0;
             default:
                 error("Event not found %s \n", rdma_event_str(cm_event.event));
-                return;
+                rdma_disconnect(client_res->id);
+                disconnect_client(client_res, cm_event_channel, frame, &server_buff, &client_buff);
+                return -1;
         }
     }
 }
 
-void start_client(struct sockaddr_in* s_addr, char* frame) {
+int start_client(struct sockaddr_in* s_addr, char* frame) {
     info("Connecting to Server at: %s , port: %d \n",
          inet_ntoa(s_addr->sin_addr),
          ntohs(s_addr->sin_port));
-    wait_for_event(s_addr, frame);
+    return wait_for_event(s_addr, frame);
 }
 
 int main(int argc, char **argv) {

@@ -13,9 +13,10 @@ from library.rdma.utils import to_sockaddr, sockaddr_in
 dll_path = getenv_with_default(SHM_DLL_DIR_PATH_ENV, "")
 if dll_path != "":
     dll_path = os.path.join(dll_path, '')
-lib = ctypes.CDLL(f"{dll_path}rdma_client_lib_{sys.platform}.so")
+lib = ctypes.CDLL(f"library/rdma/rdma_client_lib_{sys.platform}.so")
 
 lib.start_client.argtypes = [ctypes.POINTER(sockaddr_in), ctypes.c_char_p]
+lib.start_client.restype = ctypes.c_int
 
 
 def start_client(host, port, payload):
@@ -24,8 +25,7 @@ def start_client(host, port, payload):
         sockaddr = to_sockaddr(af, host, port)
         logging.info(f"start_client: sending string of size: {len(payload)}")
         buf = ctypes.create_string_buffer(payload, len(payload))
-        sleep(5)
-        lib.start_client(sockaddr, buf)
+        return lib.start_client(sockaddr, buf)
     except Exception as e:
         err = f"Error: exception while running the client: {e}"
         logging.error(f"{err}\n")

@@ -100,11 +100,11 @@ void rdma_buffer_deregister(struct ibv_mr *mr)
         error("Passed memory region is NULL, ignoring\n");
         return;
     }
-    debug("Deregistered: %p , len: %u , stag : 0x%x \n",
-         mr->addr,
-         (unsigned int) mr->length,
-         mr->lkey);
     ibv_dereg_mr(mr);
+    debug("Deregistered: %p , len: %u , stag : 0x%x \n",
+          mr->addr,
+          (unsigned int) mr->length,
+          mr->lkey);
 }
 
 int process_work_completion_events(struct ibv_comp_channel *comp_channel, struct ibv_wc *wc, int max_wc) {
@@ -171,7 +171,7 @@ int process_work_completion_events(struct ibv_comp_channel *comp_channel, struct
     return total_wc;
 }
 
-int disconnect_client(struct client_resources* client_res, struct rdma_event_channel *cm_event_channel, struct memory_region* region, struct exchange_buffer *server_buff, struct exchange_buffer *client_buff)
+void disconnect_client(struct client_resources* client_res, struct rdma_event_channel *cm_event_channel, struct memory_region* region, struct exchange_buffer *server_buff, struct exchange_buffer *client_buff)
 {
     int ret = -1;
 
@@ -181,16 +181,18 @@ int disconnect_client(struct client_resources* client_res, struct rdma_event_cha
         error("Failed to destroy client.sh id cleanly, %d \n", -errno);
     }
 
-    rdma_buffer_deregister(region->memory_region_mr);
-    rdma_buffer_deregister(client_buff->buffer);
-    rdma_buffer_deregister(server_buff->buffer);
+    if ( region->memory_region_mr != NULL)
+        rdma_buffer_deregister(region->memory_region_mr);
+//    if (client_buff->buffer != NULL)
+//        rdma_buffer_deregister(client_buff->buffer);
+//    if (server_buff != NULL && server_buff->buffer != NULL)
+//        rdma_buffer_deregister(server_buff->buffer);
 
     // rdma_destroy_event_channel(cm_event_channel);
     debug("Client resource clean up is complete \n");
-    return 0;
 }
 
-int disconnect_server(struct client_resources* client_res)
+void disconnect_server(struct client_resources* client_res)
 {
     int ret = -1;
 
@@ -206,7 +208,6 @@ int disconnect_server(struct client_resources* client_res)
 //    free(client_res);
 
     debug("Server shut-down is complete \n");
-    return 0;
 }
 
 /* Code acknowledgment: rping.c from librdmacm/examples */

@@ -1,5 +1,7 @@
 import logging
 import threading
+import concurrent.futures
+import time
 
 import netifaces as ni
 
@@ -51,14 +53,14 @@ if __name__ == '__main__':
 
     t_msq = threading.Thread(target=msg_queue.receive_frame_from_queue, args=(_GRPC_MSG_SIZE, handle_rdma_data,)) # CreateCDIs
     t_rpc_server = threading.Thread(target=serve_rpc, args=(rpc_host, rpc_port))
-    # t_rdma_server = threading.Thread(target=serve_rdma, args=(rdma_host, int(rdma_port), msg_queue))
 
     t_msq.start()
     t_rpc_server.start()
-    # t_rdma_server.start()
 
-    # t_msq.join()
-    # t_rpc_server.join()
-    # t_rdma_server.join()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        while True:
+            future = executor.submit(serve_rdma, rdma_host, rdma_port, msg_queue)
+            if future.exception():
+                logging.info("Server killed itself. Restarting in 5 seconds. \n")
+                continue
 
-    serve_rdma(rdma_host=rdma_host, rdma_port=int(rdma_port), msq=msg_queue)

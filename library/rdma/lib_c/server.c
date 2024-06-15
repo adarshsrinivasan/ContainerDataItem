@@ -244,7 +244,7 @@ void send_msg_to_queue(int msq_id, char* frame, struct frame_msg* sbuf) {
         exit(1);
     }
     else
-        debug("Message of size %ld sent in msq_id: %d \n", buf_length, msq_id);
+        debug("Message of size %ld sent in msq_id: %d \n", strlen(sbuf->ftext), msq_id);
 }
 
 void* wait_for_event(void *args) {
@@ -300,7 +300,7 @@ void* wait_for_event(void *args) {
                     error("RDMA read returns empty data. Disconnecting Server \n");
                     rdma_buffer_deregister(frame->memory_region_mr);
                     disconnect_server(_client_struct);
-                    pthread_exit(NULL);
+                    pthread_exit((void*)-1);
                 }
                 clock_gettime(CLOCK_MONOTONIC_RAW, &end);
                 const uint64_t ns = (end.tv_sec * 1000000000 + end.tv_nsec) - (start.tv_sec * 1000000000 + start.tv_nsec);
@@ -317,13 +317,14 @@ void* wait_for_event(void *args) {
                 disconnect_server(_client_struct);
                 debug("Cleanup complete - starting over \n");
                 send_msg_to_queue(msq_id, received_frame, sbuf);
-                pthread_exit(NULL);
+                pthread_exit((void*)0);
             default:
                 error("Event not found %s\n", rdma_event_str(cm_event.event));
-                pthread_exit(NULL);
+                disconnect_server(_client_struct);
+                debug("Cleanup complete - starting over \n");
+                pthread_exit((void*)-1);
         }
     }
-    pthread_exit(NULL);
 }
 
 
@@ -363,10 +364,10 @@ const char* start_rdma_server(struct sockaddr_in *server_sockaddr, int msq_id) {
         args.frame = (struct memory_region *) malloc(sizeof(struct memory_region *));
         args.msq_id = msq_id;
         int ret = pthread_create(&thread_id, NULL, (void*) wait_for_event, (void *) &args);
-        if (ret != 0) { error("Error from pthread: %d\n", ret); exit(1); }
+        if (ret != 0) { error("Error from pthread: %d\n", ret); }
         pthread_join(thread_id, 0);
-
-        memset(received_frame, 0, DATA_SIZE);
+        if (received_frame != NULL)
+            memset(received_frame, 0, DATA_SIZE);
         free(args.frame);
         free(args.client_resources);
         free(args.sbuf);

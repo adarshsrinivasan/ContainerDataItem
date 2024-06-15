@@ -23,6 +23,7 @@
 
 #define DEFAULT_RDMA_PORT (12345)
 #define ENABLE_ERROR
+#define ENABLE_DEBUG
 
 #define CQ_CAPACITY (16)
 #define MAX_SGE (2)
@@ -34,7 +35,8 @@
 
 #ifdef ENABLE_ERROR
 #define error(msg, args...) do {\
-        fprintf(stderr, "%s : %d : ERROR : "msg, __FILE__, __LINE__, ## args);\
+        fprintf(stderr, "%s : %d : ERROR : "msg, __FILE__, __LINE__, ## args); \
+        perror("PERROR");\
     }while(0);
 #else
 #define error(msg, args...)

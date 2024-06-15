@@ -107,9 +107,9 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
 
         # Transfer the data to the requested host
         client = MinionRDMAClient(host=request.transfer_host, port=request.transfer_port)
-        response = client.CreateCDIs(cdi_minion_table_list)  # make sure cdi_minion_table.payload is populated
-        if response.err != "":
-            err = f"Minion-TransferAndDeleteCDIs: exception while transferring CDI to {request.transfer_host}:{request.transfer_port}: {response.err}"
+        error = client.CreateCDIs(cdi_minion_table_list)  # make sure cdi_minion_table.payload is populated
+        if error != "":
+            err = f"Minion-TransferAndDeleteCDIs: exception while transferring CDI to {request.transfer_host}:{request.transfer_port}: {error}"
             logging.error(f"TransferAndDeleteCDIs: {err}")
             return pb2.MinionTransferAndDeleteCDIsResponse(err=err)
 
