@@ -1,6 +1,4 @@
 import logging
-from time import sleep
-import threading
 import concurrent.futures
 
 from library.rdma.client import start_client
@@ -22,7 +20,6 @@ class MinionRDMAClient(object):
         for cdi_minion_table in cdi_minion_table_list:
             request_list.append(cdi_minion_table.as_proto_cdi_config())
         message = pb2.MinionCreateCDIsRequest(cdi_configs=request_list)
-        # logging.info(f"message: {message}")
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             for idx, _message in enumerate(message.cdi_configs):
@@ -35,7 +32,8 @@ class MinionRDMAClient(object):
                         if res == -1:
                             while True:
                                 logging.info(f"Retrying sending {idx}\n")
-                                retry_client_fut = executor.submit(start_client, self.host, self.server_port, _message_serialized)
+                                retry_client_fut = executor.submit(start_client, self.host, self.server_port,
+                                                                   _message_serialized)
                                 if concurrent.futures.as_completed(retry_client_fut):
                                     if retry_client_fut.result() == -1:
                                         continue
@@ -49,6 +47,7 @@ class MinionRDMAClient(object):
                         logging.info(f'Successful :)\n')
             executor.submit(start_client, self.host, self.server_port, b"Done", )
         return ""
+
 
 def serve_rdma(rdma_host, rdma_port, msq):
     logging.info(f"Starting RDMA server on : {rdma_host}:{rdma_port}")
