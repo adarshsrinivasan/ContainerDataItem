@@ -1,10 +1,7 @@
 import logging
-<<<<<<< Updated upstream
 from time import sleep
-=======
 import threading
 import concurrent.futures
->>>>>>> Stashed changes
 
 from library.rdma.client import start_client
 from library.rdma.server import start_server
