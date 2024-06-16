@@ -21,3 +21,8 @@ delete:
 	cd postgres && make delete || true
 #	cd prometheus && make delete || true
 	cd redis && make delete || true
+
+deploy-once:
+	cd k8s-rdma-shared-dev-plugin && kubectl apply -k . || true
+	cd multus-cni && kubectl apply -f . || true
+	cd whereabouts && kubectl apply -f . || true
