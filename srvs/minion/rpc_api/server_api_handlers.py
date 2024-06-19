@@ -1,4 +1,5 @@
 import logging
+import os
 from concurrent import futures
 
 import grpc
@@ -72,6 +73,7 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
     def TransferAndDeleteCDIs(self, request, context):
         logging.info(f"TransferAndDeleteCDIs: Processing request")
         cdi_minion_table_list = []
+
         for cdi_config in request.cdi_configs:
             cdi_minion_table = CDI_Minion_Table(cdi_id=cdi_config.cdi_id)
             logging.info(f"TransferAndDeleteCDIs: Fetching cdi record with key: {cdi_minion_table.cdi_id}")
@@ -108,10 +110,19 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
         # Transfer the data to the requested host
         client = MinionRDMAClient(host=request.transfer_host, port=request.transfer_port)
         error = client.CreateCDIs(cdi_minion_table_list)  # make sure cdi_minion_table.payload is populated
+
         if error != "":
             err = f"Minion-TransferAndDeleteCDIs: exception while transferring CDI to {request.transfer_host}:{request.transfer_port}: {error}"
             logging.error(f"TransferAndDeleteCDIs: {err}")
             return pb2.MinionTransferAndDeleteCDIsResponse(err=err)
+
+        while True:
+            not_changed = False
+            for cdi_minion_table in cdi_minion_table_list:
+                cdi_minion_table.get_by_cdi_id()
+                not_changed = (not_changed or cdi_minion_table.uid == os.getuid())
+            if not not_changed:
+                break
 
         # Clean up the transferred CDIs from local
         for cdi_minion_table in cdi_minion_table_list:

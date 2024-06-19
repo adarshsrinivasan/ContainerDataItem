@@ -15,7 +15,9 @@ from srvs.extractor.db.cache_ops import init_cache_client
 from srvs.extractor.rest_api.server_api_handler import serve_rest
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(format='%(asctime)s,%(msecs)03d %(levelname)-8s [%(filename)s:%(lineno)d:%(funcName)s] %(message)s',
+                        datefmt='%Y-%m-%d:%H:%M:%S',
+                        level=logging.INFO)
     logging.info("Starting Extractor 0_0")
 
     node_ip = getenv_with_default(NODE_IP_ENV, "0.0.0.0")

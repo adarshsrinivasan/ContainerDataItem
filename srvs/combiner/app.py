@@ -12,7 +12,9 @@ from srvs.combiner.rpc_api.controller_client_api_handlers import register_with_c
 from srvs.combiner.rpc_api.server_api_handler import serve_rpc
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(format='%(asctime)s,%(msecs)03d %(levelname)-8s [%(filename)s:%(lineno)d:%(funcName)s] %(message)s',
+                        datefmt='%Y-%m-%d:%H:%M:%S',
+                        level=logging.INFO)
     logging.info("Starting Combiner 0_0")
 
     node_ip = getenv_with_default(NODE_IP_ENV, "0.0.0.0")

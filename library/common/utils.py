@@ -1,3 +1,4 @@
+import logging
 import os
 import random
 import string
@@ -30,11 +31,46 @@ def decode_payload(encoded_payload):
     # return base64.b64decode(encoded_payload).decode("ascii")
     return encoded_payload
 
+
 def get_kube_dns_url(node_ip="", pod_ip="", pod_namespace="", deploy_platform="kubernetes"):
     if deploy_platform == "kubernetes":
         # return f"{pod_ip}.{pod_namespace}.pod.cluster.local"
         return pod_ip
     return node_ip
+
+
+def proto_pack_data(process_id, process_name, app_id, app_name, cdi_id, cdi_key, cdi_size_bytes, cdi_access_mode, uid,
+                    gid, payload):
+    info_str = f"{process_id}:{process_name}:{app_id}:{app_name}:{cdi_id}:{cdi_key}:{cdi_size_bytes}:{cdi_access_mode}:{uid}:{gid}"
+    packed_data = f"{info_str}\n{payload}"
+    return packed_data
+
+
+def proto_unpack_data(packed_data):
+    data_split = packed_data.split("\n")
+    info_split = data_split[0].split(":")
+
+    process_id = info_split[0].strip()
+    process_name = info_split[1].strip()
+    app_id = info_split[2].strip()
+    app_name = info_split[3].strip()
+    cdi_id = info_split[4].strip()
+    cdi_key = int(info_split[5])
+    cdi_size_bytes = int(info_split[6])
+    cdi_access_mode = int(info_split[7])
+    uid = int(info_split[8])
+    gid = int(info_split[9])
+
+    payload = f"{data_split[1]}\n{data_split[2]}"
+
+    # cleanup extra characters
+    payload = payload.strip()
+    find_substr = "DSW'"
+    pos = payload.find(find_substr)
+    payload = payload[:pos + len(find_substr)]
+
+    return (process_id, process_name, app_id, app_name, cdi_id, cdi_key, cdi_size_bytes, cdi_access_mode, uid,
+            gid, payload)
 
 
 def pack_data(stream_id, frame_count, frame_order, x_shape, y_shape, done, frame, remote_video_save_dir_path,
@@ -73,3 +109,12 @@ def unpack_data(packed_data):
 
     return (stream_id, frame_count, frame_order, x_shape, y_shape, done, frame, remote_video_save_dir_path, sftp_host,
             sftp_port, sftp_user, sftp_pwd)
+
+
+def write_string_to_file(string, file_name):
+    try:
+        with open(file_name, 'w') as file:
+            file.write(string)
+        logging.info(f"String written to {file_name} successfully.")
+    except Exception as e:
+        logging.info(f"An error occurred: {e}")
