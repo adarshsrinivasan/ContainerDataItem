@@ -156,8 +156,9 @@ static int post_recv_hello() {
 static void build_message_buffer(struct memory_region *region, const char* str_to_send) {
 
     region->memory_region = malloc(DATA_SIZE);
+    debug("Allocated memory of size : %ld", strlen(region->memory_region));
     strcpy(region->memory_region, str_to_send);
-
+    debug("Copied and going to register");
     region->memory_region_mr = rdma_buffer_register(client_res->pd,
                                                     region->memory_region,
                                                         DATA_SIZE,

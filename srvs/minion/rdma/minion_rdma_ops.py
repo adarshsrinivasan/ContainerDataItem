@@ -9,6 +9,8 @@ from srvs.common.rpc_api import controller_api_pb2 as cont_pb2
 import concurrent.futures
 from srvs.minion.common.cdi_ops_handlers import create_cdis
 
+received_frame = 1
+sent_frame = 1
 
 class MinionRDMAClient(object):
     def __init__(self, host, port):
@@ -16,6 +18,7 @@ class MinionRDMAClient(object):
         self.server_port = port
 
     def CreateCDIs(self, cdi_minion_table_list):
+        global sent_frame
         logging.info(f"CreateCDIs({self.host}:{self.server_port}): Sending request")
         request_list = []
         for cdi_minion_table in cdi_minion_table_list:
@@ -30,8 +33,8 @@ class MinionRDMAClient(object):
                                                       _message.cdi_size_bytes, _message.cdi_access_mode, _message.uid,
                                                       _message.gid, _message.payload)
                 # _message_serialized = _message.SerializeToString()
-                if idx == (len(message.cdi_configs) - 1):
-                    write_string_to_file(string=_message.payload, file_name="/tmp/first_block_sender")
+                write_string_to_file(string=_message.payload, file_name=f"/tmp/sender_{sent_frame}")
+                sent_frame += 1
                 # test_cdi_config = cont_pb2.CdiConfig()
                 # test_cdi_config.ParseFromString(_message_serialized.encode())
                 client_future = executor.submit(start_client, self.host, self.server_port, _message_serialized.encode())
@@ -64,6 +67,7 @@ def serve_rdma(rdma_host, rdma_port, msq):
 
 
 def handle_rdma_data(serialized_frames):
+    global received_frame
     logging.info(f"received the frame: {len(serialized_frames)}")
     cdi_configs = []
     for idx, serialized_frame in enumerate(serialized_frames):
@@ -82,8 +86,9 @@ def handle_rdma_data(serialized_frames):
         cdi_config.gid = split_payload[9]
         cdi_config.payload = split_payload[10]
         cdi_configs.append(cdi_config)
-        if idx == (len(serialized_frames) - 1):
-            write_string_to_file(string=cdi_config.payload, file_name="/tmp/first_block_receiver")
+
+        write_string_to_file(string=cdi_config.payload, file_name=f"/tmp/receiver_{received_frame}")
+        received_frame += 1
 
     request = pb2.MinionCreateCDIsRequest(cdi_configs=cdi_configs)
     logging.info(f"converted!")

@@ -67,7 +67,11 @@ def proto_unpack_data(packed_data):
     payload = payload.strip()
     find_substr = "DSW'"
     pos = payload.find(find_substr)
-    payload = payload[:pos + len(find_substr)]
+    if pos == -1:
+        find_substr = "DRX'"
+        pos = payload.find(find_substr)
+    if pos != -1:
+        payload = payload[:pos + len(find_substr)]
 
     return (process_id, process_name, app_id, app_name, cdi_id, cdi_key, cdi_size_bytes, cdi_access_mode, uid,
             gid, payload)

@@ -181,8 +181,15 @@ void disconnect_client(struct client_resources* client_res, struct rdma_event_ch
         error("Failed to destroy client.sh id cleanly, %d \n", -errno);
     }
 
+    debug("Freeing memory region \n");
+    if (region->memory_region != NULL ) {
+        free(region->memory_region);
+        region->memory_region = NULL;
+    }
+    debug("De-registering memory region mr \n");
     if ( region->memory_region_mr != NULL)
         rdma_buffer_deregister(region->memory_region_mr);
+
 //    if (client_buff->buffer != NULL)
 //        rdma_buffer_deregister(client_buff->buffer);
 //    if (server_buff != NULL && server_buff->buffer != NULL)

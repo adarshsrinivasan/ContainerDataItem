@@ -117,11 +117,11 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
             return pb2.MinionTransferAndDeleteCDIsResponse(err=err)
 
         while True:
-            not_changed = False
-            for cdi_minion_table in cdi_minion_table_list:
-                cdi_minion_table.get_by_cdi_id()
-                not_changed = (not_changed or cdi_minion_table.uid == os.getuid())
-            if not not_changed:
+            changed = True
+            for idx, cdi_config in enumerate(request.cdi_configs):
+                cdi_minion_table = cdi_minion_table_list[idx].get_by_cdi_id()
+                changed = (changed and (cdi_config.uid == cdi_minion_table.uid))
+            if changed:
                 break
 
         # Clean up the transferred CDIs from local

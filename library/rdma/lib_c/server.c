@@ -244,7 +244,7 @@ void send_msg_to_queue(int msq_id, char* frame, struct frame_msg* sbuf) {
         exit(1);
     }
     else
-        debug("Message of size %ld sent in msq_id: %d \n", strlen(sbuf->ftext), msq_id);
+        debug("DEBUG:::MESSAGE OF SIZE SENDING: %ld sent in msq_id: %d \n", strlen(sbuf->ftext), msq_id);
 }
 
 void* wait_for_event(void *args) {
@@ -308,6 +308,7 @@ void* wait_for_event(void *args) {
 
                 received_frame = (char *) malloc ( DATA_SIZE );
                 strcpy(received_frame, frame->memory_region);
+                debug("RECEIVED frame of size %ld \n", strlen(received_frame));
                 post_send_ACK(_client_struct, server_buffer);
                 break;
 
@@ -366,6 +367,7 @@ const char* start_rdma_server(struct sockaddr_in *server_sockaddr, int msq_id) {
         int ret = pthread_create(&thread_id, NULL, (void*) wait_for_event, (void *) &args);
         if (ret != 0) { error("Error from pthread: %d\n", ret); }
         pthread_join(thread_id, 0);
+
         if (received_frame != NULL)
             memset(received_frame, 0, DATA_SIZE);
         free(args.frame);

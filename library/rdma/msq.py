@@ -61,12 +61,16 @@ class IPCMsgQueue:
         while True:
             buf = create_string_buffer(buf_size + 16)
             recv_len = libc.msgrcv(self.msq_id, buf, buf_size + 16, 1, 0)
+            logging.info(f"receive_frame_from_queue: received msg: {recv_len}")
             if recv_len != -1:
                 frame_msg = FrameMsg.from_buffer(buf)
                 if frame_msg.ftext == b"Done":
                     if callback_fn:
+                        logging.info(f"receive_frame_from_queue: calling callback")
                         callback_fn(list_of_frames_received)
+                        list_of_frames_received = []
                 else:
+                    logging.info(f"receive_frame_from_queue: adding to list text of length %ld", len(frame_msg.ftext))
                     list_of_frames_received.append(frame_msg.ftext)
             else:
                 logging.error(f"Error in receiving frame from the queue")
