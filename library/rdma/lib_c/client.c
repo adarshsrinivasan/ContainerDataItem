@@ -213,8 +213,8 @@ static int send_message_to_server(struct memory_region *region) {
 static void connect_to_server() {
     struct rdma_conn_param conn_param;
     bzero(&conn_param, sizeof(conn_param));
-    conn_param.initiator_depth = 3;
-    conn_param.responder_resources = 3;
+    conn_param.initiator_depth = 5;
+    conn_param.responder_resources = 5;
     conn_param.retry_count = 232;
     HANDLE_NZ(rdma_connect(client_res->id, &conn_param));
 }

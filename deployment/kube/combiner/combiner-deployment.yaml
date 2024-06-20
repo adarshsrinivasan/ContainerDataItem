@@ -11,11 +11,22 @@ spec:
     metadata:
       labels:
         app: combiner
+        role: combiner
     spec:
       securityContext:
         runAsUser: 995
         runAsGroup: 25
       hostIPC: True
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: role
+                    operator: In
+                    values:
+                      - extractor
+              topologyKey: "kubernetes.io/hostname"
       containers:
         - name: combiner
           image: adarshzededa/cdi-combiner:latest

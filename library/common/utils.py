@@ -41,7 +41,8 @@ def get_kube_dns_url(node_ip="", pod_ip="", pod_namespace="", deploy_platform="k
 
 def proto_pack_data(process_id, process_name, app_id, app_name, cdi_id, cdi_key, cdi_size_bytes, cdi_access_mode, uid,
                     gid, payload):
-    info_str = f"{process_id}:{process_name}:{app_id}:{app_name}:{cdi_id}:{cdi_key}:{cdi_size_bytes}:{cdi_access_mode}:{uid}:{gid}"
+    sz = len(payload)
+    info_str = f"{process_id}:{process_name}:{app_id}:{app_name}:{cdi_id}:{cdi_key}:{cdi_size_bytes}:{cdi_access_mode}:{uid}:{gid}:{sz}"
     packed_data = f"{info_str}\n{payload}"
     return packed_data
 
@@ -60,18 +61,20 @@ def proto_unpack_data(packed_data):
     cdi_access_mode = int(info_split[7])
     uid = int(info_split[8])
     gid = int(info_split[9])
+    sz = int(info_split[10])
 
     payload = f"{data_split[1]}\n{data_split[2]}"
 
     # cleanup extra characters
-    payload = payload.strip()
-    find_substr = "DSW'"
-    pos = payload.find(find_substr)
-    if pos == -1:
-        find_substr = "DRX'"
-        pos = payload.find(find_substr)
-    if pos != -1:
-        payload = payload[:pos + len(find_substr)]
+    payload = payload[:sz]
+    # payload = payload.strip()
+    # find_substr = "DSW'"
+    # pos = payload.find(find_substr)
+    # if pos == -1:
+    #     find_substr = "DRX'"
+    #     pos = payload.find(find_substr)
+    # if pos != -1:
+    #     payload = payload[:pos + len(find_substr)]
 
     return (process_id, process_name, app_id, app_name, cdi_id, cdi_key, cdi_size_bytes, cdi_access_mode, uid,
             gid, payload)

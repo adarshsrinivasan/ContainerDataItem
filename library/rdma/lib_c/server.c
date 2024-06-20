@@ -361,7 +361,6 @@ const char* start_rdma_server(struct sockaddr_in *server_sockaddr, int msq_id) {
         args.client_buffer = client_buffer;
 
         args.sbuf = (struct frame_msg *) malloc(sizeof(struct frame_msg *));
-
         args.frame = (struct memory_region *) malloc(sizeof(struct memory_region *));
         args.msq_id = msq_id;
         int ret = pthread_create(&thread_id, NULL, (void*) wait_for_event, (void *) &args);
