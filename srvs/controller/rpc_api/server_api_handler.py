@@ -73,6 +73,8 @@ class ControllerService(pb2_grpc.ControllerServiceServicer):
         minion_table.namespace = request.namespace
         minion_table.rpc_ip = request.rpc_ip
         minion_table.rpc_port = request.rpc_port
+        minion_table.rdma_ip = request.rdma_ip
+        minion_table.rdma_port = request.rdma_port
         if result is None:
             logging.info(f"RegisterMinion: Creating entry for minion on node{request.node_ip}")
             # if not, then create the record
@@ -233,11 +235,13 @@ class ControllerService(pb2_grpc.ControllerServiceServicer):
                 # if minion is not present, then return an error
                 err = f"Controller-TransferCDIs: Couldn't find next minion for node_ip: {next_minion_table.node_ip}"
                 return pb2.TransferCDIsResponse(err=err)
-            next_minion_host = get_kube_dns_url(node_ip=next_minion_table.node_ip, pod_ip=next_minion_table.rpc_ip,
-                                                pod_namespace=next_minion_table.namespace, deploy_platform=deploy_platform)
+            # next_minion_host = get_kube_dns_url(node_ip=next_minion_table.node_ip, pod_ip=next_minion_table.rpc_ip,
+            #                                     pod_namespace=next_minion_table.namespace, deploy_platform=deploy_platform)
+            next_minion_host = next_minion_table.rdma_ip
+            next_minion_port = str(next_minion_table.rdma_port)
             response = current_minion_client.TransferAndDeleteCDIs(
                 transfer_host=next_minion_host,
-                transfer_port=str(next_minion_table.rpc_port),
+                transfer_port=next_minion_port,
                 cdi_controller_table_list=cdi_controller_table_list)
             if response.err != "":
                 logging.error(f"TransferCDIs: Exception while transferring CDIs from minion on node {current_process_table.node_ip} to minion on node {next_process_table.node_ip}: {response.err}")

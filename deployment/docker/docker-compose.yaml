@@ -91,6 +91,8 @@ services:
       SQL_DB: cdi
       RPC_HOST: "0.0.0.0"
       RPC_PORT: 50001
+      RDMA_HOST: "10.56.217.171"
+      RDMA_PORT: 12345
       CONTROLLER_HOST: controller
       CONTROLLER_PORT: 50000
       NODE_IP: "minion"

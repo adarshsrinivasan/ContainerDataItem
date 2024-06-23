@@ -1,5 +1,4 @@
 import logging
-
 import grpc
 
 from srvs.common.rpc_api import minion_api_pb2_grpc as pb2_grpc, minion_api_pb2 as pb2

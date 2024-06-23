@@ -1,9 +1,7 @@
 # Tutorial: https://www.youtube.com/watch?v=zj6r_EEhv6s
 deploy:
-	kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.3.0/deploy/static/provider/cloud/deploy.yaml
 	kubectl apply -f extractor-deployment.yaml
 	kubectl apply -f extractor-service.yaml
-	sleep 60
 	kubectl apply -f extractor-ingress.yaml
 
 delete:

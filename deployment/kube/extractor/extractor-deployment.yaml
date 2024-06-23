@@ -11,6 +11,7 @@ spec:
     metadata:
       labels:
         app: extractor
+        role: extractor
     spec:
       securityContext:
         runAsUser: 997

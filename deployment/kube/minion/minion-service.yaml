@@ -10,6 +10,10 @@ spec:
     - protocol: "TCP"
       port: 50000
       targetPort: 50000
-      name: minion
+      name: minion-rpc
+    - protocol: "TCP"
+      port: 12345
+      targetPort: 12345
+      name: minion-rdma
   selector:
     app: minion

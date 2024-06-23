@@ -11,11 +11,23 @@ spec:
     metadata:
       labels:
         app: detector
+        role: detector
     spec:
       securityContext:
         runAsUser: 996
         runAsGroup: 24
       hostIPC: True
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: role
+                    operator: In
+                    values:
+                      - extractor
+                      - combiner
+              topologyKey: "kubernetes.io/hostname"
       containers:
         - name: detector
           image: adarshzededa/cdi-detector:latest
