@@ -14,6 +14,7 @@ from library.common.cdi_config_model import populate_config_from_parent_config, 
 import cv2
 import numpy as np
 import requests
+import time
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -131,6 +132,8 @@ def process_tasks(queue):
             task_object = r.blpop(queue, timeout=0)
             if not task_object:
                 continue
+
+            time.sleep(5)
             _, task_json = task_object
             task_dict = json.loads(task_json)
             task_name = task_dict['task_name']
