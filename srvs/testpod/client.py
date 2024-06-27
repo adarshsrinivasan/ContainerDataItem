@@ -5,7 +5,7 @@ import boto3
 import concurrent.futures
 
 # Server URL
-SERVER_URL = os.environ.get('WORKFLOW_CONTROLLER_URL', 'http://0.0.0.0:3002/orchestrator/api/v1')  # Update with your server URL
+SERVER_URL = os.environ.get('WORKFLOW_CONTROLLER_URL', 'http://0.0.0.0:3000/orchestrator/api/v1')  # Update with your server URL
 
 # Helper functions for image processing
 def process_image(path_img):

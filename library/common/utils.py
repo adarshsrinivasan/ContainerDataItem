@@ -63,7 +63,10 @@ def proto_unpack_data(packed_data):
     gid = int(info_split[9])
     sz = int(info_split[10])
 
-    payload = f"{data_split[1]}\n{data_split[2]}"
+    payload = f"{data_split[1]}"
+    if len(data_split) > 2:
+        for i in range(2, len(data_split)):
+            payload = f"{payload}\n{data_split[i]}"
 
     # cleanup extra characters
     payload = payload[:sz]
