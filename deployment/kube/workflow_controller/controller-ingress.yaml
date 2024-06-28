@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: orchestrator-ingress
+  annotations:
+    # Use the shared ingress-nginx
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/proxy-body-size: 16m
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+    - host: cdi
+      http:
+        paths:
+          - path: /orchestrator(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: workflow-controller-service
+                port:
+                  number: 5002
