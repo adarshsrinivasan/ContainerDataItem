@@ -86,22 +86,22 @@ static int setup_client_resources(struct sockaddr_in *s_addr, struct client_reso
  */
 static int post_send_hello(struct client_resources* client_res, struct exchange_buffer *client_buff) {
     struct ibv_wc wc;
-    client_buff.message = malloc(sizeof(struct msg));
-    client_buff.message->type = HELLO;
-    client_buff.message->data.offset = CLIENT_HELLO;
+    client_buff->message = malloc(sizeof(struct msg));
+    client_buff->message->type = HELLO;
+    client_buff->message->data.offset = CLIENT_HELLO;
 
-    HANDLE(client_buff.buffer = rdma_buffer_register(client_res->pd,
-                                                     client_buff.message,
+    HANDLE(client_buff->buffer = rdma_buffer_register(client_res->pd,
+                                                     client_buff->message,
                                                      sizeof(struct msg),
                                                      (IBV_ACCESS_LOCAL_WRITE |
                                                       IBV_ACCESS_REMOTE_READ |
                                                       IBV_ACCESS_REMOTE_WRITE)));
 
-    show_exchange_buffer(client_buff.message);
+    show_exchange_buffer(client_buff->message);
 
-    client_send_sge.addr = (uint64_t) client_buff.buffer->addr;
-    client_send_sge.length = (uint32_t) client_buff.buffer->length;
-    client_send_sge.lkey = client_buff.buffer->lkey;
+    client_send_sge.addr = (uint64_t) client_buff->buffer->addr;
+    client_send_sge.length = (uint32_t) client_buff->buffer->length;
+    client_send_sge.lkey = client_buff->buffer->lkey;
 
     bzero(&client_send_wr, sizeof(client_send_wr));
     client_send_wr.sg_list = &client_send_sge;
@@ -124,15 +124,15 @@ static int post_send_hello(struct client_resources* client_res, struct exchange_
  * Receive HELLO message from server
  */
 static int post_recv_hello(struct client_resources* client_res, struct exchange_buffer *server_buff) {
-    server_buff.message = malloc(sizeof(struct msg));
-    HANDLE(server_buff.buffer = rdma_buffer_register(client_res->pd,
-                                                     server_buff.message,
+    server_buff->message = malloc(sizeof(struct msg));
+    HANDLE(server_buff->buffer = rdma_buffer_register(client_res->pd,
+                                                     server_buff->message,
                                                      sizeof(struct msg),
                                                      (IBV_ACCESS_LOCAL_WRITE)));
 
-    server_recv_sge.addr = (uint64_t) server_buff.message;
+    server_recv_sge.addr = (uint64_t) server_buff->message;
     server_recv_sge.length = (uint32_t) sizeof(struct msg);
-    server_recv_sge.lkey = server_buff.buffer->lkey;
+    server_recv_sge.lkey = server_buff->buffer->lkey;
 
     bzero(&server_recv_wr, sizeof(server_recv_wr));
     server_recv_wr.sg_list = &server_recv_sge;
@@ -153,7 +153,7 @@ static int post_recv_hello(struct client_resources* client_res, struct exchange_
 static void build_message_buffer(struct client_resources* client_res, struct memory_region *region, const char* str_to_send) {
 
     region->memory_region = malloc(DATA_SIZE);
-    debug("Allocated memory of size : %ld \n", strlen(region->memory_region));
+    debug("Allocated memory of size : %ld for data size %ld \n", strlen(region->memory_region), strlen(str_to_send));
     strcpy(region->memory_region, str_to_send);
     debug("Copied and going to register \n");
     region->memory_region_mr = rdma_buffer_register(client_res->pd,
@@ -171,25 +171,25 @@ static void build_message_buffer(struct client_resources* client_res, struct mem
  */
 static int send_message_to_server(struct client_resources* client_res, struct exchange_buffer* client_buff, struct memory_region *region) {
     struct ibv_wc wc;
-    client_buff.message = malloc(sizeof(struct msg));
-    client_buff.message->type = FRAME;
+    client_buff->message = malloc(sizeof(struct msg));
+    client_buff->message->type = FRAME;
 
-    memcpy(&client_buff.message->data.mr, region->memory_region_mr, sizeof(struct ibv_mr));
-    client_buff.message->data.mr.addr = (void *) (region->memory_region);
+    memcpy(&client_buff->message->data.mr, region->memory_region_mr, sizeof(struct ibv_mr));
+    client_buff->message->data.mr.addr = (void *) (region->memory_region);
 
-    client_buff.buffer = rdma_buffer_register(client_res->pd,
-                                              client_buff.message,
+    client_buff->buffer = rdma_buffer_register(client_res->pd,
+                                              client_buff->message,
                                               sizeof(struct msg),
                                               (IBV_ACCESS_LOCAL_WRITE |
                                                IBV_ACCESS_REMOTE_READ |
                                                IBV_ACCESS_REMOTE_WRITE));
 
     debug("Post Frame message \n")
-    show_exchange_buffer(client_buff.message);
+    show_exchange_buffer(client_buff->message);
 
-    client_send_sge.addr = (uint64_t) client_buff.message;
+    client_send_sge.addr = (uint64_t) client_buff->message;
     client_send_sge.length = (uint32_t) sizeof(struct msg);
-    client_send_sge.lkey = client_buff.buffer->lkey;
+    client_send_sge.lkey = client_buff->buffer->lkey;
 
     bzero(&client_send_wr, sizeof(client_send_wr));
     client_send_wr.sg_list = &client_send_sge;
@@ -218,15 +218,15 @@ static void connect_to_server(struct client_resources* client_res) {
 
 int post_recv_ack(struct client_resources* client_res, struct exchange_buffer* server_buff) {
     struct ibv_wc wc;
-    server_buff.message = malloc(sizeof(struct msg));
-    HANDLE(server_buff.buffer = rdma_buffer_register(
+    server_buff->message = malloc(sizeof(struct msg));
+    HANDLE(server_buff->buffer = rdma_buffer_register(
                                                      client_res->pd,
-                                                     server_buff.message,
+                                                     server_buff->message,
                                                      sizeof(struct msg),
                                                      (IBV_ACCESS_LOCAL_WRITE)));
-    server_recv_sge.addr = (uint64_t) server_buff.message;
+    server_recv_sge.addr = (uint64_t) server_buff->message;
     server_recv_sge.length = (uint32_t) sizeof(struct msg);
-    server_recv_sge.lkey = server_buff.buffer->lkey;
+    server_recv_sge.lkey = server_buff->buffer->lkey;
 
     bzero(&server_recv_wr, sizeof(server_recv_wr));
     server_recv_wr.sg_list = &server_recv_sge;
@@ -247,20 +247,20 @@ int post_recv_ack(struct client_resources* client_res, struct exchange_buffer* s
 static int wait_for_event(struct sockaddr_in *s_addr, struct client_args *args) {
 
     struct client_resources *client_res = args->client_resources;
-    struct exchange_buffer *server_buff = args->server_buffer;
-    struct exchange_buffer *client_buff = args->client_buffer;
+    struct exchange_buffer *server_buff = &args->server_buffer;
+    struct exchange_buffer *client_buff = &args->client_buffer;
     char* str_to_send = args->frame;
     struct rdma_cm_event *received_event = NULL;
     struct memory_region *frame = NULL;
     struct timespec start, end;
 
-    resolve_addr(s_addr);
+    resolve_addr(s_addr, client_res);
     while (rdma_get_cm_event(cm_event_channel, &received_event) == 0) {
         struct ibv_wc wc;
         struct rdma_cm_event cm_event;
-        debug("%s event received \n", rdma_event_str(cm_event.event));
         debug("copying to event to received_event\n")
         memcpy(&cm_event, received_event, sizeof(*received_event));
+        debug("%s event received \n", rdma_event_str(cm_event.event));
         HANDLE_NZ(rdma_ack_cm_event(received_event));
         switch (cm_event.event) {
             case RDMA_CM_EVENT_ADDR_RESOLVED:
@@ -293,14 +293,14 @@ static int wait_for_event(struct sockaddr_in *s_addr, struct client_args *args) 
 
                 // wait for receiving the ACK
                 process_work_completion_events(client_res->comp_channel, &wc, 1);
-                show_exchange_buffer(server_buff.message);
+                show_exchange_buffer(server_buff->message);
                 debug("Received ACK \n");
                 clock_gettime(CLOCK_MONOTONIC_RAW, &end);
                 const uint64_t ns = (end.tv_sec * 1000000000 + end.tv_nsec) - (start.tv_sec * 1000000000 + start.tv_nsec);
                 info("elapsed %7.02f ms (%lu ns)\n ", ns / 1000000.0, ns);
 
                 rdma_disconnect(client_res->id);
-                disconnect_client_long(client_res, cm_event_channel, frame, &server_buff, &client_buff);
+                disconnect_client_long(client_res, cm_event_channel, frame, server_buff, client_buff);
                 //cm_client_id = NULL;
                 return 0;
             default:
@@ -320,11 +320,12 @@ int start_client(struct sockaddr_in* s_addr, char* frame) {
     args.server_buffer = server_buff;
     args.client_buffer = client_buff;
     args.client_resources = (struct client_resources *) malloc(sizeof(struct client_resources));
-    args.frame = frame;
+    args.frame = (char *) malloc(strlen(frame));
+    memcpy(args.frame, frame, strlen(frame));
     info("Connecting to Server at: %s , port: %d \n",
          inet_ntoa(s_addr->sin_addr),
          ntohs(s_addr->sin_port));
-    return wait_for_event(s_addr, args);
+    return wait_for_event(s_addr, &args);
 }
 
 int main(int argc, char **argv) {

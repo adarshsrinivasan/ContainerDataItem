@@ -7,8 +7,9 @@ from library.rdma.client import start_client
 if __name__ == '__main__':
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
         # Start the load operations and mark each future with its URL
-        for x in range(0, 5):
-            data = generate_data_of_size_kb(100 * x)
+        for x in range(0, 100):
+            data = generate_data_of_size_kb(10 * x)
+            print(f"{x} : Sending data of size: {len(data)}")
             client_future = executor.submit(start_client, "10.10.1.1", 1234, data.encode())
             if concurrent.futures.as_completed(client_future):
                 try:
