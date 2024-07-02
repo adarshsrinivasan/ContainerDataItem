@@ -5,10 +5,10 @@ from library.common.utils import generate_data_of_size_kb
 from library.rdma.client import start_client
 
 if __name__ == '__main__':
-    data = generate_data_of_size_kb(1024)
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
         # Start the load operations and mark each future with its URL
         for x in range(0, 5):
+            data = generate_data_of_size_kb(100 * x)
             client_future = executor.submit(start_client, "10.10.1.1", 1234, data.encode())
             if concurrent.futures.as_completed(client_future):
                 try:

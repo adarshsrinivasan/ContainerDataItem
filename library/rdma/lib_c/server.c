@@ -248,7 +248,7 @@ void send_msg_to_queue(int msq_id, char* frame, struct frame_msg* sbuf) {
 }
 
 void* wait_for_event(void *args) {
-    struct thread_arguments *arguments = (struct thread_arguments*) args;
+    struct thread_arguments_server *arguments = (struct thread_arguments_server*) args;
     struct client_resources *_client_struct = arguments->client_resources;
     struct exchange_buffer *server_buffer = &arguments->server_buffer;
     struct exchange_buffer *client_buffer = &arguments->client_buffer;
@@ -354,7 +354,7 @@ const char* start_rdma_server(struct sockaddr_in *server_sockaddr, int msq_id) {
     for(;;) {
         pthread_t thread_id;
         info("SPINNING NEW THREAD\n");
-        struct thread_arguments args;
+        struct thread_arguments_server args;
         struct exchange_buffer server_buffer, client_buffer;
         args.client_resources = (struct client_resources *) malloc(sizeof(struct client_resources));
         args.server_buffer = server_buffer;

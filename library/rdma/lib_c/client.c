@@ -1,14 +1,11 @@
 #include "structs.h"
 #include "utils.h"
 
+static struct rdma_event_channel *cm_event_channel = NULL;
 static struct ibv_send_wr client_send_wr, *bad_client_send_wr = NULL;
 static struct ibv_recv_wr server_recv_wr, *bad_server_recv_wr = NULL;
 static struct ibv_sge client_send_sge, server_recv_sge;
-static struct exchange_buffer server_buff;
-static struct exchange_buffer client_buff;
 static struct rdma_cm_id *cm_client_id = NULL;
-static struct client_resources *client_res = NULL;
-static struct rdma_event_channel *cm_event_channel = NULL;
 static struct ibv_qp_init_attr qp_init_attr; // client.sh queue pair attributes
 
 
@@ -22,9 +19,8 @@ struct client_buffer_args {
 /*
  * Create client.sh ID and resolve the destination IP address to RDMA Address
  */
-static void resolve_addr(struct sockaddr_in *s_addr) {
-    client_res = (struct client_resources *) malloc(sizeof(struct client_resources));
 
+static void resolve_addr(struct sockaddr_in *s_addr, struct client_resources* client_res) {
     /* Init Event Channel */
     HANDLE(cm_event_channel = rdma_create_event_channel());
     debug("RDMA CM event channel created: %p \n", cm_event_channel)
@@ -41,7 +37,7 @@ static void resolve_addr(struct sockaddr_in *s_addr) {
 }
 
 /* Setup client.sh resources like PD, CC, CQ, QP */
-static int setup_client_resources(struct sockaddr_in *s_addr) {
+static int setup_client_resources(struct sockaddr_in *s_addr, struct client_resources* client_res) {
     info("Trying to connect to server at : %s port: %d \n",
          inet_ntoa(s_addr->sin_addr),
          ntohs(s_addr->sin_port));
@@ -88,7 +84,7 @@ static int setup_client_resources(struct sockaddr_in *s_addr) {
 /*
  * Send HELLO message to server
  */
-static int post_send_hello() {
+static int post_send_hello(struct client_resources* client_res, struct exchange_buffer *client_buff) {
     struct ibv_wc wc;
     client_buff.message = malloc(sizeof(struct msg));
     client_buff.message->type = HELLO;
@@ -127,7 +123,7 @@ static int post_send_hello() {
 /*
  * Receive HELLO message from server
  */
-static int post_recv_hello() {
+static int post_recv_hello(struct client_resources* client_res, struct exchange_buffer *server_buff) {
     server_buff.message = malloc(sizeof(struct msg));
     HANDLE(server_buff.buffer = rdma_buffer_register(client_res->pd,
                                                      server_buff.message,
@@ -154,7 +150,7 @@ static int post_recv_hello() {
  * Register a memory buffer for the local memory region with the pd,
  * memory address, length and permissions.
  * */
-static void build_message_buffer(struct memory_region *region, const char* str_to_send) {
+static void build_message_buffer(struct client_resources* client_res, struct memory_region *region, const char* str_to_send) {
 
     region->memory_region = malloc(DATA_SIZE);
     debug("Allocated memory of size : %ld \n", strlen(region->memory_region));
@@ -173,7 +169,7 @@ static void build_message_buffer(struct memory_region *region, const char* str_t
 /*
  * Send the registered memory region to the server as a FRAME message type
  */
-static int send_message_to_server(struct memory_region *region) {
+static int send_message_to_server(struct client_resources* client_res, struct exchange_buffer* client_buff, struct memory_region *region) {
     struct ibv_wc wc;
     client_buff.message = malloc(sizeof(struct msg));
     client_buff.message->type = FRAME;
@@ -211,7 +207,7 @@ static int send_message_to_server(struct memory_region *region) {
 }
 
 /* Send Connect Request to the server */
-static void connect_to_server() {
+static void connect_to_server(struct client_resources* client_res) {
     struct rdma_conn_param conn_param;
     bzero(&conn_param, sizeof(conn_param));
     conn_param.initiator_depth = 5;
@@ -220,7 +216,7 @@ static void connect_to_server() {
     HANDLE_NZ(rdma_connect(client_res->id, &conn_param));
 }
 
-int post_recv_ack() {
+int post_recv_ack(struct client_resources* client_res, struct exchange_buffer* server_buff) {
     struct ibv_wc wc;
     server_buff.message = malloc(sizeof(struct msg));
     HANDLE(server_buff.buffer = rdma_buffer_register(
@@ -248,8 +244,12 @@ int post_recv_ack() {
  * Blocking while loop which checks for incoming events and calls the necessary
  * functions based on the received events
  */
-static int wait_for_event(struct sockaddr_in *s_addr, char* str_to_send) {
+static int wait_for_event(struct sockaddr_in *s_addr, struct client_args *args) {
 
+    struct client_resources *client_res = args->client_resources;
+    struct exchange_buffer *server_buff = args->server_buffer;
+    struct exchange_buffer *client_buff = args->client_buffer;
+    char* str_to_send = args->frame;
     struct rdma_cm_event *received_event = NULL;
     struct memory_region *frame = NULL;
     struct timespec start, end;
@@ -270,23 +270,23 @@ static int wait_for_event(struct sockaddr_in *s_addr, char* str_to_send) {
             /* RDMA Address Resolution completed successfully */
             case RDMA_CM_EVENT_ROUTE_RESOLVED:
                 frame = (struct memory_region *) malloc(sizeof(struct memory_region *));
-                setup_client_resources(s_addr);
-                post_recv_hello();
+                setup_client_resources(s_addr, client_res);
+                post_recv_hello(client_res, server_buff);
 
-                build_message_buffer(frame, str_to_send);
-                connect_to_server();
+                build_message_buffer(client_res, frame, str_to_send);
+                connect_to_server(client_res);
                 break;
 
             /* RDMA Route established successfully */
             case RDMA_CM_EVENT_ESTABLISHED:
-                post_send_hello();
+                post_send_hello(client_res, client_buff);
                 // wait for receiving the Hello
                 process_work_completion_events(client_res->comp_channel, &wc, 1);
 
-                post_recv_ack();
+                post_recv_ack(client_res, server_buff);
 
                 clock_gettime(CLOCK_MONOTONIC_RAW, &start);
-                int ret = send_message_to_server(frame);
+                int ret = send_message_to_server(client_res, client_buff, frame);
                 if (ret < 0) {
                     error("Unable to send message to server \n");
                 }
@@ -313,10 +313,18 @@ static int wait_for_event(struct sockaddr_in *s_addr, char* str_to_send) {
 }
 
 int start_client(struct sockaddr_in* s_addr, char* frame) {
+    struct exchange_buffer server_buff;
+    struct exchange_buffer client_buff;
+    struct client_resources *client_res = NULL;
+    struct client_args args;
+    args.server_buffer = server_buff;
+    args.client_buffer = client_buff;
+    args.client_resources = (struct client_resources *) malloc(sizeof(struct client_resources));
+    args.frame = frame;
     info("Connecting to Server at: %s , port: %d \n",
          inet_ntoa(s_addr->sin_addr),
          ntohs(s_addr->sin_port));
-    return wait_for_event(s_addr, frame);
+    return wait_for_event(s_addr, args);
 }
 
 int main(int argc, char **argv) {
