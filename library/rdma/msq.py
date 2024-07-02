@@ -64,6 +64,9 @@ class IPCMsgQueue:
             logging.info(f"receive_frame_from_queue: received msg: {recv_len}")
             if recv_len != -1:
                 frame_msg = FrameMsg.from_buffer(buf)
+                if len(frame_msg.ftext) < 10:
+                    logging.info(f"This is the Done string: {frame_msg.ftext}, len: {len(frame_msg.ftext)}")
+                    frame_msg.ftext = frame_msg.ftext.split(b'\x0f')[0]
                 if frame_msg.ftext == b"Done":
                     if callback_fn:
                         logging.info(f"receive_frame_from_queue: calling callback")

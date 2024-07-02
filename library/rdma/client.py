@@ -25,6 +25,7 @@ def start_client(host, port, payload):
         sockaddr = to_sockaddr(af, host, port)
         logging.info(f"start_client: sending string of size: {len(payload)}")
         buf = ctypes.create_string_buffer(payload, len(payload))
+        logging.info(f"buf value is? {buf}")
         return lib.start_client(sockaddr, buf)
     except Exception as e:
         err = f"Error: exception while running the client: {e}"

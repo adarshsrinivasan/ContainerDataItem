@@ -153,6 +153,7 @@ static int post_recv_hello(struct client_resources* client_res, struct exchange_
 static void build_message_buffer(struct client_resources* client_res, struct memory_region *region, const char* str_to_send) {
 
     region->memory_region = malloc(DATA_SIZE);
+    memset(region->memory_region, 0, DATA_SIZE);
     debug("Allocated memory of size : %ld for data size %ld \n", strlen(region->memory_region), strlen(str_to_send));
     strcpy(region->memory_region, str_to_send);
     debug("Copied and going to register \n");
@@ -322,6 +323,7 @@ int start_client(struct sockaddr_in* s_addr, char* frame) {
     args.client_resources = (struct client_resources *) malloc(sizeof(struct client_resources));
     args.frame = (char *) malloc(strlen(frame));
     memcpy(args.frame, frame, strlen(frame));
+    debug("frame is of size %ld, args.frame is of size %ld", strlen(args.frame), strlen(args.frame))
     info("Connecting to Server at: %s , port: %d \n",
          inet_ntoa(s_addr->sin_addr),
          ntohs(s_addr->sin_port));

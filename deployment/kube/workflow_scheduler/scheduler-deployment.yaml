@@ -11,11 +11,22 @@ spec:
     metadata:
       labels:
         app: workflow-scheduler
+        role: workflow-scheduler
     spec:
       securityContext:
         runAsUser: 994
         runAsGroup: 21
       hostIPC: True
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: role
+                    operator: In
+                    values:
+                      - workflow-worker-1
+              topologyKey: "kubernetes.io/hostname"
       containers:
       - name: workflow-scheduler
         image: tarun1997/workflow-scheduler:latest

@@ -11,6 +11,7 @@ spec:
     metadata:
       labels:
         app: workflow-worker-1
+        role: workflow-worker-1
     spec:
       securityContext:
         runAsUser: 998

@@ -102,6 +102,11 @@ def handle_rdma_data(serialized_frames):
     for idx, serialized_frame in enumerate(serialized_frames):
         cdi_config = cont_pb2.CdiConfig()
         # cdi_config.ParseFromString(serialized_frame)
+
+        # desperate times require such desperate code :'(
+        if serialized_frame.endswith(b'\x0f4'):
+            serialized_frame = serialized_frame[:-len(b'\x0f4')]
+
         split_payload = proto_unpack_data(packed_data=serialized_frame.decode())
         cdi_config.process_id = split_payload[0]
         cdi_config.process_name = split_payload[1]
