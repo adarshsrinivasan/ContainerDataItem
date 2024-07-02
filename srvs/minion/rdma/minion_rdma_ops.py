@@ -104,8 +104,9 @@ def handle_rdma_data(serialized_frames):
         # cdi_config.ParseFromString(serialized_frame)
 
         # desperate times require such desperate code :'(
-        if serialized_frame.endswith(b'\x0f4'):
-            serialized_frame = serialized_frame[:-len(b'\x0f4')]
+        serialized_frame = serialized_frame.split(b'\xf4')[0]
+        logging.info(f"handle_rdma_data: size of serialized_frame after split: {len(serialized_frame)}")
+
 
         split_payload = proto_unpack_data(packed_data=serialized_frame.decode())
         cdi_config.process_id = split_payload[0]
