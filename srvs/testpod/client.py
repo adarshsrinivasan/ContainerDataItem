@@ -151,7 +151,11 @@ if __name__ == '__main__':
         get_tasks()
     elif choice == '5':
         images = list_images_in_s3(s3_bucket_name)
-        start_workflows_in_parallel(images)
+        print(images)
+        new_images = []
+        for i in range(0, 1):
+            new_images.append(images[0])
+        start_workflows_in_parallel(new_images)
     elif choice == '6':
         get_exec()
     else:

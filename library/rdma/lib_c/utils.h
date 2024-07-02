@@ -29,7 +29,8 @@ void show_memory_map(const char* memory_region);
 void show_exchange_buffer(struct msg *attr);
 
 void disconnect_server(struct client_resources* client_res);
-void disconnect_client(struct client_resources* client_res, struct rdma_event_channel *cm_event_channel, struct memory_region* region, struct exchange_buffer *server_buff, struct exchange_buffer *client_buff);
+void disconnect_client_short(struct client_resources* client_res, struct rdma_event_channel *cm_event_channel, struct memory_region* region);
+void disconnect_client_long(struct client_resources* client_res, struct rdma_event_channel *cm_event_channel, struct memory_region* region, struct exchange_buffer *server_buff, struct exchange_buffer *client_buff);
 
 struct ibv_mr *rdma_buffer_register(struct ibv_pd *pd,
                                     void *addr,
