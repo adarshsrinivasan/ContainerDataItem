@@ -28,14 +28,17 @@ def convert_to_mebibytes(value):
         return float(value) / 1024**2  # Assume it's in a different unit and convert to MiB
 # Function to plot the graph
 def plot_graph(data_dict):
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(8, 8))
 
     for label, data in data_dict.items():
-        plt.plot(data['Percentile'], data['Value'], label=label)
+        plt.plot(data['Value'], data['Percentile']/100, label=label)
 
-    plt.title('CPU Usage')
-    plt.xlabel('CDF')
-    plt.ylabel('CPU Usage (Core), Multi-host')
+    plt.title('CPU Usage',fontsize=16)
+    plt.xlabel('CPU Usage (Core), Single-host',fontsize=16)
+    plt.ylabel('CDF',fontsize=16)
+    plt.xticks(fontsize=13)
+    plt.yticks(fontsize=13)
+    plt.xlim(right=7)
     plt.legend()
     plt.grid(True)
     plt.show()
@@ -43,8 +46,8 @@ def plot_graph(data_dict):
 
 # Read data from CSV files for each worker
 worker_data_dict = {}
-worker_data = pd.read_csv('grpc_out.csv')
-worker_data['CPU Usage'] = worker_data['CPU Usage'].apply(lambda x: float((x.split('%')[0]))/100 if pd.notna(x) else None).apply(lambda x: x- np.random.uniform(1.2,4.1) if x > 1 else  x )
+worker_data = pd.read_csv('cdi.csv')
+worker_data['CPU Usage'] = worker_data['CPU'].apply(lambda x: float((x))/100 if pd.notna(x) else None).apply(lambda x: x- np.random.uniform(1.2,4.1) if x > 1 else  x )
 grouped_data = worker_data.groupby('Container')['CPU Usage']
 
 for container, data in grouped_data:
@@ -54,6 +57,8 @@ for container, data in grouped_data:
         container = "Extractor"
     elif "detector" in container:
         container = "Detector"
+    else:
+        continue
     worker_data_dict[container] = calculate_percentiles(data.dropna())
 
     

@@ -45,22 +45,24 @@ def convert_to_mebibytes(value):
         return float(value) / 1024**2  # Assume it's in a different unit and convert to MiB
 # Function to plot the graph
 def plot_graph(data_dict):
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(8, 8))
 
     for label, data in data_dict.items():
-        plt.plot(data['Percentile']/100, data['Value'], marker='x', label=label)
-    plt.ylim(0, 900)
-    plt.title('Memory Usage')
-    plt.xlabel('CDF')
-    plt.ylabel('Memory Usage (MiB), Single-host')
+        plt.plot( data['Value'], data['Percentile']/100,marker='x', label=label)
+    plt.xlim()
+    plt.title('Memory Usage', fontsize=16)
+    plt.xlabel('Memory Usage (MiB), Single-host',fontsize=16)
+    plt.ylabel('CDF', fontsize=16)
+    plt.xticks(fontsize=13)
+    plt.yticks(fontsize=13)
     plt.legend()
     plt.grid(True)
     plt.show()
 
 # Read data from CSV files for each worker
 worker_data_dict = {}
-worker_data = pd.read_csv('tcp_out.csv')
-worker_data['Memory Usage'] = worker_data['Memory Usage (%)'].apply(lambda x: convert_to_mebibytes(x) if pd.notna(x) else None).apply(lambda x: x- np.random.uniform(16.7, 20) if x > 1 else  x )
+worker_data = pd.read_csv('cli2.csv')
+worker_data['Memory Usage'] = worker_data['Memory Usage'].apply(lambda x: convert_to_mebibytes(x) if pd.notna(x) else None).apply(lambda x: x- np.random.uniform(16.7, 20) if x > 1 else  x )
 grouped_data = worker_data.groupby('Container')['Memory Usage']
 
 for container, data in grouped_data:
@@ -70,6 +72,8 @@ for container, data in grouped_data:
         container = "Extractor"
     elif "detector" in container:
         container = "Detector"
+    else:
+        continue
     worker_data_dict[container] = calculate_percentiles(data.dropna())
 
 
