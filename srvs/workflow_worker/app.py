@@ -15,6 +15,10 @@ import cv2
 import numpy as np
 import requests
 import time
+import boto3
+from PIL import Image
+from io import BytesIO
+Image.MAX_IMAGE_PIXELS = None
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -27,6 +31,11 @@ controller_host = os.environ.get('CONTROLLER_HOST', '0.0.0.0')
 controller_port = os.environ.get('CONTROLLER_PORT', '50000')
 controller_client = ControllerClient(host=controller_host, port=controller_port)
 PROCESS_ID = os.environ.get('PROCESS_ID', 'worker')
+
+s3 = boto3.client('s3',
+                        aws_access_key_id='AKIAUTA4UV6WXMYCSA74',
+                        aws_secret_access_key='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',
+                        region_name='ap-south-1')
 
 redis_host = 'redis-service'
 redis_port = 6379
@@ -61,8 +70,37 @@ class ProcessService(pb2_grpc.ProcessServiceServicer):
         pass
 
     def NotifyCDIsAccess(self, request, context):
-        logging.info(f"NotifyCDIsAccess: Received access for the : {request}")
+        logging.info(f"NotifyCDIsAccess: Received access for the : {request} {time.time()}")
         return pb2.NotifyCDIsAccessResponse(err="")
+
+def saveWorkflowOutput(cdi_config, cdi_id):
+    for id, cdi in cdi_config.cdis.items():
+        if id == cdi_id:
+            data = cdi.read_data()
+            image_data = base64.b64decode(data)
+            image = Image.open(BytesIO(image_data))
+
+            buffered = BytesIO()
+            image.save(buffered, format="JPEG")
+            buffered.seek(0)  # Rewind the buffer to the beginning
+            s3.put_object(Bucket='orkes-image-data', Key=f'cdi_{cdi_id}.jpg', Body=buffered, ContentType='image/jpeg')
+            print(f'Uploaded file cdi_{cdi_id}.jpg to S3')
+            break
+
+def completeWorkflow(pId, cdi_id):
+    response = controller_client.GetCDIsByProcessID(pId)
+    if response.err != "":
+        raise Exception(f"extractor: exception while fetching cdi config: {response.err}")
+    cdi_config = Config()
+    cdi_config.from_proto_controller_cdi_configs(response.cdi_configs)
+    filter_cdi(cdi_config, cdi_id)
+    print(f'completing workflow {cdi_id}')
+    saveWorkflowOutput(cdi_config, cdi_id)
+    response = controller_client.DeleteCDIs(pId, cdi_config)
+    if response.err != "":
+        raise Exception(f"extractor: exception while fetching cdi config: {response.err}")
+    else:
+        print(f'Deleted CDI for the process {pId}')
 
 
 def serve_rpc(rpc_host, rpc_port):
@@ -146,6 +184,10 @@ def process_tasks(queue):
             worker_id = task_dict['worker_id']
             print('Received task', task_name, task_id, 'from workflow', workflow_name, workflow_id, workflow_exec_id)
             process_image(PROCESS_ID, request, task_name)
+
+            if(int(tasks_id[len(tasks_id)-1]) == int(task_id)):
+                print("finished execution, uploading the response to storage")
+                completeWorkflow(PROCESS_ID, request)
 
             data = {
                 'worker': {

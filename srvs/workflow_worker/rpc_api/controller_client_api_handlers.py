@@ -43,6 +43,12 @@ class ControllerClient(object):
         message = pb2.TransferCDIsRequest(id=config.process_id, transfer_id=config.transfer_id,
                                           transfer_mode=str(config.transfer_mode), cdi_configs=proto_controller_cdi_configs)
         return self.stub.TransferCDIs(message)
+    
+    def DeleteCDIs(self, process_id, config):
+        logging.info(f"DeleteCDIs({self.host}:{self.server_port}): Sending request")
+        proto_controller_cdi_configs = config.to_proto_controller_cdi_configs()
+        message = pb2.DeleteCDIsRequest(id=process_id, cdi_configs=proto_controller_cdi_configs)
+        return self.stub.DeleteCDIs(message)
 
 
 def register_with_controller(process_id, name, namespace, node_ip, host, port, uid, gid, controller_host, controller_port):
