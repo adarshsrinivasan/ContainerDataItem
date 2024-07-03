@@ -12,6 +12,7 @@ from srvs.minion.common.cdi_ops_handlers import create_cdis
 received_frame = 1
 sent_frame = 1
 
+
 class MinionRDMAClient(object):
     def __init__(self, host, port):
         self.host = host
@@ -111,12 +112,12 @@ def handle_rdma_data(serialized_frames):
                 decoded_serialized_frame = serialized_frame.decode()
                 decoded = True
             except UnicodeDecodeError as ude:
-                logging.error(f"handle_rdma_data: exception while decoding received data: {ude}. Last few characters: {serialized_frame[-10:]}.")
+                logging.error(
+                    f"handle_rdma_data: exception while decoding received data: {ude}. Last few characters: {serialized_frame[-10:]}.")
                 serialized_frame = serialized_frame[:-1]
         # desperate code ends. The above code will haunt me in my dreams...
 
-
-        split_payload = proto_unpack_data(packed_data=serialized_frame.decode())
+        split_payload = proto_unpack_data(packed_data=decoded_serialized_frame)
         cdi_config.process_id = split_payload[0]
         cdi_config.process_name = split_payload[1]
         cdi_config.app_id = split_payload[2]
