@@ -20,6 +20,12 @@ deploy-cdi-infra:
 	cd minion && make deploy
 	cd common_config && make deploy
 
+deploy-rdma-tests:
+	cd k8s-rdma-shared-dev-plugin && make deploy
+	cd multus-cni && make deploy
+	cd whereabouts && make deploy
+	cd rdma && make deploy
+
 delete-cdi-infra:
 	cd common_config && make delete || true
 	cd minion && make delete || true

@@ -13,7 +13,7 @@ from library.rdma.utils import to_sockaddr, sockaddr_in
 dll_path = getenv_with_default(SHM_DLL_DIR_PATH_ENV, "")
 if dll_path != "":
     dll_path = os.path.join(dll_path, '')
-lib = ctypes.CDLL(f"library/rdma/rdma_client_lib_{sys.platform}.so")
+lib = ctypes.CDLL(f"{dll_path}library/rdma/rdma_client_lib_{sys.platform}.so")
 
 lib.start_client.argtypes = [ctypes.POINTER(sockaddr_in), ctypes.c_char_p]
 lib.start_client.restype = ctypes.c_int

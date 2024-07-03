@@ -60,7 +60,7 @@
     fprintf(stdout, "log: %s.%03ld " msg, buffer, tv.tv_usec / 1000, ##args); \
 } while (0);
 
-#define DATA_SIZE (1024 * 1024 * 4)
+#define DATA_SIZE (1024 * 1024 * 10)
 
 struct exchange_buffer {
     struct msg* message;

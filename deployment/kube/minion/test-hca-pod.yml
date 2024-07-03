@@ -11,7 +11,7 @@ spec:
       labels:
         app: minion
       annotations:
-        k8s.v1.cni.cncf.io/networks: macvlan-conf
+        k8s.v1.cni.cncf.io/networks: macvlan-conf.yaml
     spec:
       restartPolicy: Always
       containers:

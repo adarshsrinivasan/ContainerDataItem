@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-rdma-server
+  annotations:
+    k8s.v1.cni.cncf.io/networks: whereabouts-conf
+  labels:
+    app: test-rdma-server
+    role: test-rdma-server
+spec:
+  restartPolicy: OnFailure
+  containers:
+    - name: test-rdma-server
+      image: 135642/cdi-rdma
+      securityContext:
+        capabilities:
+          add: [ "IPC_LOCK" ]
+      resources:
+        limits:
+          rdma/hca_shared_devices_a: "1"
+      command:
+        - sh
+        - -c
+        - |
+          ls -l /dev/infiniband /sys/class/infiniband /sys/class/net
+          sleep infinity

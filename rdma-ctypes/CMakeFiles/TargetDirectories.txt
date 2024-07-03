@@ -1,8 +1,0 @@
-/Users/varshanatarajan/Documents/Spring 2024/ContainerDataItem/rdma-ctypes/CMakeFiles/run-server.dir
-/Users/varshanatarajan/Documents/Spring 2024/ContainerDataItem/rdma-ctypes/CMakeFiles/run-client.dir
-/Users/varshanatarajan/Documents/Spring 2024/ContainerDataItem/rdma-ctypes/CMakeFiles/server.dir
-/Users/varshanatarajan/Documents/Spring 2024/ContainerDataItem/rdma-ctypes/CMakeFiles/client.dir
-/Users/varshanatarajan/Documents/Spring 2024/ContainerDataItem/rdma-ctypes/CMakeFiles/rdma_server_lib.dir
-/Users/varshanatarajan/Documents/Spring 2024/ContainerDataItem/rdma-ctypes/CMakeFiles/rdma_client_lib.dir
-/Users/varshanatarajan/Documents/Spring 2024/ContainerDataItem/rdma-ctypes/CMakeFiles/edit_cache.dir
-/Users/varshanatarajan/Documents/Spring 2024/ContainerDataItem/rdma-ctypes/CMakeFiles/rebuild_cache.dir
