@@ -21,6 +21,7 @@ from library.common.cdi_config_model import Config
 from library.common.cdi_config_model import populate_config_from_parent_config, CDI
 from PIL import Image
 from io import BytesIO
+Image.MAX_IMAGE_PIXELS = None
 
 redis_host = 'redis-service'
 redis_port = 6379
@@ -61,7 +62,7 @@ best_case = os.environ.get('BEST_CASE', 'True') == 'True'
 def create_cdi(cdi_key, cdi_id):
     cdi_config = Config()
     cdi_config.cdis = {}
-    cdi = CDI(cdi_id=cdi_id, cdi_key=cdi_key, cdi_size_bytes=10000000, cdi_access_mode=666, uid=uid, gid=gid)
+    cdi = CDI(cdi_id=cdi_id, cdi_key=cdi_key, cdi_size_bytes=2000000, cdi_access_mode=666, uid=uid, gid=gid)
     cdi_config.cdis[cdi_key] = cdi
     cdi_config.process_id = process_id
     cdi_config.process_name = "scheduler_process"
@@ -110,7 +111,7 @@ def get_request_cdi_transfer(previous_id,transfer_id, cdi_id):
     cdi_config.from_proto_controller_cdi_configs(response.cdi_configs)
     cdi_config.transfer_id = transfer_id
     filter_cdi(cdi_config, cdi_id)
-    logging.info(f"Requesting CDI transfer to process {transfer_id} from {process_id} and config {cdi_config}")
+    logging.info(f"Requesting CDI transfer to process {transfer_id} from {previous_id} and config {cdi_config} {time.time()}")
     try:
         response = controller_client.TransferCDIs(cdi_config)
         if response.err:
@@ -122,7 +123,7 @@ def get_request_cdi_transfer(previous_id,transfer_id, cdi_id):
 
 def request_cdi_transfer(transfer_id, cdi_key, cdi_config):
     cdi_config.transfer_id = transfer_id
-    logging.info(f"Requesting CDI transfer for {cdi_key} to process {transfer_id} from {process_id} and config {cdi_config}")
+    logging.info(f"Requesting CDI transfer for {cdi_key} to process {transfer_id} from {process_id} and config {cdi_config} {time.time()}")
     try:
         response = controller_client.TransferCDIs(cdi_config)
         if response.err:
@@ -284,7 +285,7 @@ def process_tasks():
                 cur.execute("SELECT * FROM workers where worker_id = %s",( worker_id,))
                 worker_ex = cur.fetchone()
                 print(f'worker finished the task {worker_ex}')
-                completeWorkflow(worker_ex[6],request)
+                #completeWorkflow(worker_ex[6],request)
                 # Commit the transaction
                 conn.commit()
                 cur.close()
