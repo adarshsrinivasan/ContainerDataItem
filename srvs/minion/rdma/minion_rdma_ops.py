@@ -102,7 +102,20 @@ def handle_rdma_data(serialized_frames):
     for idx, serialized_frame in enumerate(serialized_frames):
         cdi_config = cont_pb2.CdiConfig()
         # cdi_config.ParseFromString(serialized_frame)
-        split_payload = proto_unpack_data(packed_data=serialized_frame.decode())
+
+        # desperate times require such desperate code :'(
+        decoded = False
+        decoded_serialized_frame = ""
+        while not decoded:
+            try:
+                decoded_serialized_frame = serialized_frame.decode()
+                decoded = True
+            except UnicodeDecodeError as ude:
+                logging.error(f"handle_rdma_data: exception while decoding received data: {ude}. Last few characters: {serialized_frame[-10:]}.")
+                serialized_frame = serialized_frame[:-1]
+        # desperate code ends. The above code will haunt me in my dreams...
+
+        split_payload = proto_unpack_data(packed_data=decoded_serialized_frame)
         cdi_config.process_id = split_payload[0]
         cdi_config.process_name = split_payload[1]
         cdi_config.app_id = split_payload[2]
