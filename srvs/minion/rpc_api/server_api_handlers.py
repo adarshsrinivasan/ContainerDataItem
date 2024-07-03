@@ -115,6 +115,7 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
             err = f"Minion-TransferAndDeleteCDIs: exception while transferring CDI to {request.transfer_host}:{request.transfer_port}: {error}"
             logging.error(f"TransferAndDeleteCDIs: {err}")
             return pb2.MinionTransferAndDeleteCDIsResponse(err=err)
+        logging.info(f"Minion-TransferAndDeleteCDIs: Waiting for cdi records to update.")
 
         while True:
             changed = True
@@ -124,18 +125,20 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
             if changed:
                 break
 
+        logging.info(f"Minion-TransferAndDeleteCDIs: Deleting CDIs")
         # Clean up the transferred CDIs from local
         for cdi_minion_table in cdi_minion_table_list:
             shm = SharedMemory(size=cdi_minion_table.cdi_size_bytes, key=cdi_minion_table.cdi_key,
                                shm_mode=cdi_minion_table.cdi_access_mode, uid=cdi_minion_table.uid,
                                gid=cdi_minion_table.gid)
+            logging.info(f"Minion-TransferAndDeleteCDIs: Deleting CDI: {cdi_minion_table.cdi_key}")
             try:
                 shm.remove()
             except Exception as err:
                 err = f"Exception while deleting SharedMemory for App: {cdi_minion_table.app_id}, CDI: {cdi_minion_table.cdi_id}: {err}"
                 # Just log if we couldn't delete the shared memory - TODO: Should we handle this differently?
                 logging.error(f"TransferAndDeleteCDIs: {err}")
-            logging.info(f"TransferAndDeleteCDIs: Successfully deleted cdi record with key: {cdi_minion_table.cdi_id}")
+            logging.info(f"TransferAndDeleteCDIs: Successfully deleted cdi with key: {cdi_minion_table.cdi_key}")
         return pb2.MinionTransferAndDeleteCDIsResponse(err="")
 
     # DeleteCDIs handles the RPC request from Controller to delete a set of CDIs from local.
@@ -165,6 +168,7 @@ class MinionControllerService(pb2_grpc.MinionControllerServiceServicer):
                 logging.error(f"DeleteCDIs: {err}")
             # delete the CID record from DB
             cdi_minion_table.delete_by_cdi_id()
+            logging.info(f"DeleteCDIs: Deleted CDI with key: {cdi_minion_table.cdi_key}")
         return pb2.MinionDeleteCDIsResponse(err="")
 
 

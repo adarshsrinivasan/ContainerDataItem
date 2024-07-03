@@ -4,7 +4,8 @@
 static struct ibv_send_wr client_send_wr, *bad_client_send_wr = NULL;
 static struct ibv_recv_wr server_recv_wr, *bad_server_recv_wr = NULL;
 static struct ibv_sge client_send_sge, server_recv_sge;
-static struct exchange_buffer server_buff, client_buff;
+static struct exchange_buffer server_buff;
+static struct exchange_buffer client_buff;
 static struct rdma_cm_id *cm_client_id = NULL;
 static struct client_resources *client_res = NULL;
 static struct rdma_event_channel *cm_event_channel = NULL;
@@ -156,9 +157,9 @@ static int post_recv_hello() {
 static void build_message_buffer(struct memory_region *region, const char* str_to_send) {
 
     region->memory_region = malloc(DATA_SIZE);
-    debug("Allocated memory of size : %ld", strlen(region->memory_region));
+    debug("Allocated memory of size : %ld \n", strlen(region->memory_region));
     strcpy(region->memory_region, str_to_send);
-    debug("Copied and going to register");
+    debug("Copied and going to register \n");
     region->memory_region_mr = rdma_buffer_register(client_res->pd,
                                                     region->memory_region,
                                                         DATA_SIZE,
@@ -215,7 +216,7 @@ static void connect_to_server() {
     bzero(&conn_param, sizeof(conn_param));
     conn_param.initiator_depth = 5;
     conn_param.responder_resources = 5;
-    conn_param.retry_count = 232;
+    debug("Trying to connect to the server \n")
     HANDLE_NZ(rdma_connect(client_res->id, &conn_param));
 }
 
@@ -257,16 +258,16 @@ static int wait_for_event(struct sockaddr_in *s_addr, char* str_to_send) {
     while (rdma_get_cm_event(cm_event_channel, &received_event) == 0) {
         struct ibv_wc wc;
         struct rdma_cm_event cm_event;
-        memcpy(&cm_event, received_event, sizeof(*received_event));
         debug("%s event received \n", rdma_event_str(cm_event.event));
+        debug("copying to event to received_event\n")
+        memcpy(&cm_event, received_event, sizeof(*received_event));
         HANDLE_NZ(rdma_ack_cm_event(received_event));
         switch (cm_event.event) {
-            /* RDMA Address Resolution completed successfully */
             case RDMA_CM_EVENT_ADDR_RESOLVED:
                 rdma_resolve_route(client_res->id, TIMEOUTMS);
                 break;
 
-            /* RDMA Route established successfully */
+            /* RDMA Address Resolution completed successfully */
             case RDMA_CM_EVENT_ROUTE_RESOLVED:
                 frame = (struct memory_region *) malloc(sizeof(struct memory_region *));
                 setup_client_resources(s_addr);
@@ -276,6 +277,7 @@ static int wait_for_event(struct sockaddr_in *s_addr, char* str_to_send) {
                 connect_to_server();
                 break;
 
+            /* RDMA Route established successfully */
             case RDMA_CM_EVENT_ESTABLISHED:
                 post_send_hello();
                 // wait for receiving the Hello
@@ -298,13 +300,13 @@ static int wait_for_event(struct sockaddr_in *s_addr, char* str_to_send) {
                 info("elapsed %7.02f ms (%lu ns)\n ", ns / 1000000.0, ns);
 
                 rdma_disconnect(client_res->id);
-                disconnect_client(client_res, cm_event_channel, frame, &server_buff, &client_buff);
+                disconnect_client_long(client_res, cm_event_channel, frame, &server_buff, &client_buff);
                 //cm_client_id = NULL;
                 return 0;
             default:
                 error("Event not found %s \n", rdma_event_str(cm_event.event));
                 rdma_disconnect(client_res->id);
-                disconnect_client(client_res, cm_event_channel, frame, &server_buff, &client_buff);
+                disconnect_client_short(client_res, cm_event_channel, frame);
                 return -1;
         }
     }

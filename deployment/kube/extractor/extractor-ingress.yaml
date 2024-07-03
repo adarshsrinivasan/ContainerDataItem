@@ -21,10 +21,3 @@ spec:
                 name: extractor-service
                 port:
                   number: 50000
-          - path: /orchestrator(/|$)(.*)
-            pathType: Prefix
-            backend:
-              service:
-                name: workflow-controller-service
-                port:
-                  number: 5002

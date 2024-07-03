@@ -37,6 +37,7 @@ class MinionRDMAClient(object):
                 sent_frame += 1
                 # test_cdi_config = cont_pb2.CdiConfig()
                 # test_cdi_config.ParseFromString(_message_serialized.encode())
+                logging.info(f"First time sending frame \n")
                 client_future = executor.submit(start_client, self.host, self.server_port, _message_serialized.encode())
                 if concurrent.futures.as_completed(client_future):
                     try:
@@ -52,12 +53,40 @@ class MinionRDMAClient(object):
                                     else:
                                         logging.info(f"Complete retrying msg: {idx}...\n")
                                         break
+                        else:
+                            logging.info(f"Received val of res = {res} \n")
                     except Exception as exc:
                         logging.error(f'Thread generated an exception: {exc}\n')
                         return f"Thread generated an exception: {exc}\n"
                     else:
                         logging.info(f'Successful :)\n')
-            executor.submit(start_client, self.host, self.server_port, b"Done", )
+                else:
+                    logging.info(f"Not completed? \n")
+            logging.info(f"Sending Done \n")
+            client_future = executor.submit(start_client, self.host, self.server_port, b"Done")
+            if concurrent.futures.as_completed(client_future):
+                try:
+                    res = client_future.result()
+                    if res == -1:
+                        while True:
+                            logging.info(f"Retrying sending done \n")
+                            retry_client_fut = executor.submit(start_client, self.host, self.server_port,
+                                                               b"Done")
+                            if concurrent.futures.as_completed(retry_client_fut):
+                                if retry_client_fut.result() == -1:
+                                    continue
+                                else:
+                                    logging.info(f"Complete retrying done: {idx}...\n")
+                                    break
+                    else:
+                        logging.info(f"Received val of res done = {res} \n")
+                except Exception as exc:
+                    logging.error(f'Thread generated an exception: {exc}\n')
+                    return f"Thread generated an exception: {exc}\n"
+                else:
+                    logging.info(f'Sending done successful :)\n')
+            else:
+                logging.info(f"Not completed done? \n")
         return ""
 
 
@@ -73,7 +102,20 @@ def handle_rdma_data(serialized_frames):
     for idx, serialized_frame in enumerate(serialized_frames):
         cdi_config = cont_pb2.CdiConfig()
         # cdi_config.ParseFromString(serialized_frame)
-        split_payload = proto_unpack_data(packed_data=serialized_frame.decode())
+
+        # desperate times require such desperate code :'(
+        decoded = False
+        decoded_serialized_frame = ""
+        while not decoded:
+            try:
+                decoded_serialized_frame = serialized_frame.decode()
+                decoded = True
+            except UnicodeDecodeError as ude:
+                logging.error(f"handle_rdma_data: exception while decoding received data: {ude}. Last few characters: {serialized_frame[-10:]}.")
+                serialized_frame = serialized_frame[:-1]
+        # desperate code ends. The above code will haunt me in my dreams...
+
+        split_payload = proto_unpack_data(packed_data=decoded_serialized_frame)
         cdi_config.process_id = split_payload[0]
         cdi_config.process_name = split_payload[1]
         cdi_config.app_id = split_payload[2]

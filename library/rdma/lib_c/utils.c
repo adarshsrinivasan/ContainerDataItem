@@ -171,7 +171,7 @@ int process_work_completion_events(struct ibv_comp_channel *comp_channel, struct
     return total_wc;
 }
 
-void disconnect_client(struct client_resources* client_res, struct rdma_event_channel *cm_event_channel, struct memory_region* region, struct exchange_buffer *server_buff, struct exchange_buffer *client_buff)
+void disconnect_client_long(struct client_resources* client_res, struct rdma_event_channel *cm_event_channel, struct memory_region* region, struct exchange_buffer *server_buff, struct exchange_buffer *client_buff)
 {
     int ret = -1;
 
@@ -190,12 +190,39 @@ void disconnect_client(struct client_resources* client_res, struct rdma_event_ch
     if ( region->memory_region_mr != NULL)
         rdma_buffer_deregister(region->memory_region_mr);
 
-//    if (client_buff->buffer != NULL)
+    if (client_buff->message != NULL) {
+        free(client_buff->message);
+    }
+    if (client_buff->buffer != NULL)
+        rdma_buffer_deregister(client_buff->buffer);
+//    if (client_buff != NULL && client_buff->buffer != NULL)
 //        rdma_buffer_deregister(client_buff->buffer);
 //    if (server_buff != NULL && server_buff->buffer != NULL)
 //        rdma_buffer_deregister(server_buff->buffer);
 
     // rdma_destroy_event_channel(cm_event_channel);
+    debug("Client resource clean up is complete \n");
+}
+
+void disconnect_client_short(struct client_resources* client_res, struct rdma_event_channel *cm_event_channel, struct memory_region* region)
+{
+    int ret = -1;
+
+    /* Destroy client.sh cm id */
+    ret = rdma_destroy_id(client_res->id);
+    if (ret) {
+        error("Failed to destroy client.sh id cleanly, %d \n", -errno);
+    }
+
+    debug("Freeing memory region \n");
+    if (region->memory_region != NULL ) {
+        free(region->memory_region);
+        region->memory_region = NULL;
+    }
+    debug("De-registering memory region mr \n");
+    if ( region->memory_region_mr != NULL)
+        rdma_buffer_deregister(region->memory_region_mr);
+
     debug("Client resource clean up is complete \n");
 }
 
