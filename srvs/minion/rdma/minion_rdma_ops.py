@@ -104,8 +104,16 @@ def handle_rdma_data(serialized_frames):
         # cdi_config.ParseFromString(serialized_frame)
 
         # desperate times require such desperate code :'(
-        serialized_frame = serialized_frame.split(b'\xf4')[0]
-        logging.info(f"handle_rdma_data: size of serialized_frame after split: {len(serialized_frame)}")
+        decoded = False
+        decoded_serialized_frame = ""
+        while not decoded:
+            try:
+                decoded_serialized_frame = serialized_frame.decode()
+                decoded = True
+            except UnicodeDecodeError as ude:
+                logging.error(f"handle_rdma_data: exception while decoding received data: {ude}. Last few characters: {serialized_frame[-10:]}.")
+                serialized_frame = serialized_frame[:-1]
+        # desperate code ends. The above code will haunt me in my dreams...
 
 
         split_payload = proto_unpack_data(packed_data=serialized_frame.decode())
