@@ -16,23 +16,23 @@ data:
         cdis:
           - cdi_id: "880519e2-7221-4387-aa1a-49707fd70810"
             cdi_key: 5780
-            cdi_size_bytes: 10000000
+            cdi_size_bytes: 100000
             cdi_access_mode: 666
           - cdi_id: "ce582af4-490d-4bdb-96b7-421522266b65"
             cdi_key: 5781
-            cdi_size_bytes: 10000000
+            cdi_size_bytes: 100000
             cdi_access_mode: 666
           - cdi_id: "d20f1517-7ca8-4d69-9f0b-c2f52444d301"
             cdi_key: 5782
-            cdi_size_bytes: 10000000
+            cdi_size_bytes: 100000
             cdi_access_mode: 666
           - cdi_id: "d31bc6b2-88bd-4712-8808-08590d8ae68e"
             cdi_key: 5783
-            cdi_size_bytes: 10000000
+            cdi_size_bytes: 100000
             cdi_access_mode: 666
           - cdi_id: "52597a08-fc2e-4a09-9c7d-88347a03e0af"
             cdi_key: 5784
-            cdi_size_bytes: 10000000
+            cdi_size_bytes: 100000
             cdi_access_mode: 666
       - name: "detector"
         id: "ebe87a92-8f00-49d7-9133-05bc592a58d5"
@@ -43,23 +43,23 @@ data:
         cdis:
           - cdi_id: "880519e2-7221-4387-aa1a-49707fd70810"
             cdi_key: 5780
-            cdi_size_bytes: 10000000
+            cdi_size_bytes: 100000
             cdi_access_mode: 666
           - cdi_id: "ce582af4-490d-4bdb-96b7-421522266b65"
             cdi_key: 5781
-            cdi_size_bytes: 10000000
+            cdi_size_bytes: 100000
             cdi_access_mode: 666
           - cdi_id: "d20f1517-7ca8-4d69-9f0b-c2f52444d301"
             cdi_key: 5782
-            cdi_size_bytes: 10000000
+            cdi_size_bytes: 100000
             cdi_access_mode: 666
           - cdi_id: "d31bc6b2-88bd-4712-8808-08590d8ae68e"
             cdi_key: 5783
-            cdi_size_bytes: 10000000
+            cdi_size_bytes: 100000
             cdi_access_mode: 666
           - cdi_id: "52597a08-fc2e-4a09-9c7d-88347a03e0af"
             cdi_key: 5784
-            cdi_size_bytes: 10000000
+            cdi_size_bytes: 100000
             cdi_access_mode: 666
       - name: "combiner"
         id: "b1610e6e-19a4-49ac-a692-8bae7cefb0a7"
@@ -71,22 +71,22 @@ data:
         cdis:
           - cdi_id: "880519e2-7221-4387-aa1a-49707fd70810"
             cdi_key: 5780
-            cdi_size_bytes: 10000000
+            cdi_size_bytes: 100000
             cdi_access_mode: 666
           - cdi_id: "ce582af4-490d-4bdb-96b7-421522266b65"
             cdi_key: 5781
-            cdi_size_bytes: 10000000
+            cdi_size_bytes: 100000
             cdi_access_mode: 666
           - cdi_id: "d20f1517-7ca8-4d69-9f0b-c2f52444d301"
             cdi_key: 5782
-            cdi_size_bytes: 10000000
+            cdi_size_bytes: 100000
             cdi_access_mode: 666
           - cdi_id: "d31bc6b2-88bd-4712-8808-08590d8ae68e"
             cdi_key: 5783
-            cdi_size_bytes: 10000000
+            cdi_size_bytes: 100000
             cdi_access_mode: 666
           - cdi_id: "52597a08-fc2e-4a09-9c7d-88347a03e0af"
             cdi_key: 5784
-            cdi_size_bytes: 10000000
+            cdi_size_bytes: 100000
             cdi_access_mode: 666
             
