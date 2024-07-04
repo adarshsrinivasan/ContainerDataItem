@@ -14,7 +14,7 @@ sys.path.append(parent_dir)
 import uuid
 import logging
 import boto3
-import datetime
+from datetime import datetime
 from rpc_api.controller_client_api_handlers import register_with_controller, ControllerClient
 from srvs.common.rpc_api import process_api_pb2_grpc as pb2_grpc, process_api_pb2 as pb2
 from library.common.cdi_config_model import Config
@@ -58,11 +58,12 @@ controller_host = os.environ.get('CONTROLLER_HOST', '0.0.0.0')
 controller_port = os.environ.get('CONTROLLER_PORT', '50000')
 controller_client = ControllerClient(host=controller_host, port=controller_port)
 best_case = os.environ.get('BEST_CASE', 'True') == 'True' 
+cdi_size = int(os.environ.get('CDI_SIZE', '10000000'))
 
 def create_cdi(cdi_key, cdi_id):
     cdi_config = Config()
     cdi_config.cdis = {}
-    cdi = CDI(cdi_id=cdi_id, cdi_key=cdi_key, cdi_size_bytes=10000000, cdi_access_mode=666, uid=uid, gid=gid)
+    cdi = CDI(cdi_id=cdi_id, cdi_key=cdi_key, cdi_size_bytes=cdi_size, cdi_access_mode=666, uid=uid, gid=gid)
     cdi_config.cdis[cdi_key] = cdi
     cdi_config.process_id = process_id
     cdi_config.process_name = "scheduler_process"
@@ -111,7 +112,8 @@ def get_request_cdi_transfer(previous_id,transfer_id, cdi_id):
     cdi_config.from_proto_controller_cdi_configs(response.cdi_configs)
     cdi_config.transfer_id = transfer_id
     filter_cdi(cdi_config, cdi_id)
-    logging.info(f"Requesting CDI transfer to process {transfer_id} from {previous_id} and config {cdi_config} {time.time()}")
+    logging.info(f"Requesting CDI transfer to process {transfer_id} from {previous_id} and config {cdi_config}")
+    logging.info(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
     try:
         response = controller_client.TransferCDIs(cdi_config)
         if response.err:
@@ -123,7 +125,8 @@ def get_request_cdi_transfer(previous_id,transfer_id, cdi_id):
 
 def request_cdi_transfer(transfer_id, cdi_key, cdi_config):
     cdi_config.transfer_id = transfer_id
-    logging.info(f"Requesting CDI transfer for {cdi_key} to process {transfer_id} from {process_id} and config {cdi_config} and {time.time()}")
+    logging.info(f"Requesting CDI transfer for {cdi_key} to process {transfer_id} from {process_id} and config {cdi_config}")
+    logging.info(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
     try:
         response = controller_client.TransferCDIs(cdi_config)
         if response.err:
@@ -353,7 +356,7 @@ if __name__ == '__main__':
                              node_ip=node_ip, host=container_ip, port=rpc_port, controller_host=controller_host,
                              controller_port=controller_port, uid=uid, gid=gid)
 
-    logging.info(f"Successfully registered with Controller! executing case bestcase :{best_case}")
+    logging.info(f"Successfully registered with Controller! executing case bestcase :{best_case} and cdi_size {cdi_size}")
     with futures.ThreadPoolExecutor(max_workers=10) as executor:
         for _ in range(10):
             executor.submit(process_tasks)

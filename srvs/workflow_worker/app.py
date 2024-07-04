@@ -18,6 +18,7 @@ import time
 import boto3
 from PIL import Image
 from io import BytesIO
+from datetime import datetime
 Image.MAX_IMAGE_PIXELS = None
 
 # Set up logging
@@ -70,7 +71,8 @@ class ProcessService(pb2_grpc.ProcessServiceServicer):
         pass
 
     def NotifyCDIsAccess(self, request, context):
-        logging.info(f"NotifyCDIsAccess: Received access for the : {request} {time.time()}")
+        logging.info(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+        logging.info(f"NotifyCDIsAccess: Received access for the : {request}")
         return pb2.NotifyCDIsAccessResponse(err="")
 
 def saveWorkflowOutput(cdi_config, cdi_id):

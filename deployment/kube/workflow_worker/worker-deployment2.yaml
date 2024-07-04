@@ -52,4 +52,4 @@ spec:
           value: "50000"
         - name: QUEUE
           value: "worker-queue-2"
-      nodeName: node-2
+      nodeName: node-3

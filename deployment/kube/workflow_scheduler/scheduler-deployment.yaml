@@ -48,3 +48,7 @@ spec:
           value: "50000"
         - name: BEST_CASE
           value: "True"
+        - name: CDI_SIZE
+          value: "2000000"
+      nodeName: node-2
+        
